@@ -1,0 +1,343 @@
+"Phrases"
+{
+	"Tag"
+	{
+		"ru"	"[entWatch]"
+		"en"	"[entWatch]"
+	}
+	"Client has auth with bans"
+	{
+		"#format"	"{1:N},{2:i},{3:i}"
+		"ru"		"{1} успешно авторизован в базе данных (Рестрикты: {2}, общая длительность: {3} минут)"
+		"en"		"{1} successfully authorized in the database (Restrictions: {2}, total duration: {3} minutes)"
+		
+	}
+	"Client has auth"
+	{
+		"#format"	"{1:N}"
+		"ru"		"{1} успешно авторизован в базе данных"
+		"en"		"{1} successfully authorized in the database"
+		
+	}
+
+	"Save item"
+	{
+		"ru"		"Сохранить данные об айтемах"
+		"en"		"Save current items data"
+	
+	}
+	"Config title"
+	{
+		"ru"		"Редактировать предмет"
+		"en"		"Item editor"
+	}
+	"Add config item"
+	{
+		"ru"		"Добавить предмет"
+		"en"		"Add config"
+	
+	}
+	"Configs item"
+	{
+		"ru"		"Список предметов"
+		"en"		"Items list"
+	}
+	"Configs title"
+	{
+		"ru"		"Список предметов"
+		"en"		"Items list"
+	}
+
+	"Pick"
+	{
+		"ru"		"подобрал"
+		"en"		"has picked up"
+	}
+	"Drop"
+	{
+		"ru"		"выбросил"
+		"en"		"has dropped"
+	}
+	"Disconnect"
+	{
+		"ru" 		"отключился из игры с"
+		"en" 		"disconnected with"
+	}
+	"Death"
+	{
+		"ru"		"умер и сбросил"
+		"en"		"has died with"
+	}
+	"Spawned"
+	{
+		"ru"		"заспавнил"
+		"en"		"spawned"
+	}
+
+	"Transfered"
+	{
+		"ru"		"передал материю"
+		"en"		"transfered item"
+	}
+	"Map"
+	{
+		"ru"		"Карта"
+		"en"		"Map"
+	}
+
+	"Use"
+	{
+		"ru"		"использовал"
+		"en"		"used"
+	}
+	"Hud"
+	{
+		"ru"	"Показ информации о материях"
+		"en"	"Displaying information about items"
+	}
+	"Cookies not loaded"
+	{
+		"ru"	"Ваши настройки не были загружены."
+		"en"	"Your settings were not loaded."
+	}
+	"Incorrect usage"
+	{
+		"ru"	"Неверное использование"
+		"en"	"Incorrect usage"
+	}
+	"Query failed"
+	{
+		"ru"	"Не удалось выполнить операцию! Попробуйте еще раз."
+		"en"	"Operation failed! Try again."
+	}
+	"Ban success"
+	{
+		"#format"	"{1:s},{2:s},{3:s}"
+		"ru"		"{1} выдал рестрикт {2} ({3})"
+		"en"		"{1} gave a restriction {2} ({3})"
+	}
+	"Unban success"
+	{
+		"#format"	"{1:s},{2:s}"
+		"ru"		"{1} снял рестрикт {2}"
+		"en"		"{1} lifted a restriction {2}"
+
+	
+	}
+	"Add ban success"
+	{
+		"#format"	"{1:s},{2:s},{3:s}"
+		"ru"		"Рестрикт был добавлен в БД (Длительность: {3}, SteamID: {1}, IP: {2})"
+		"en"		"EBan was added to the database (Duration: {3}, SteamID: {1}, IP: {2})"
+	
+	}
+	"Delete ban success"
+	{
+		"#format"	"{1:s},{2:s}"
+		"ru"		"Рестрикт был удален из БД (SteamID: {1}, IP: {2})"
+		"en"		"EBan was removed to the database (SteamID: {1}, IP: {2})"
+	
+	}
+	"DataBase is not loaded"
+	{
+		"ru"		"База данных не загружена"
+		"en"		"Database not loaded"
+	}
+	"Player is restricted"
+	{
+		"ru"		"Данный игрок уже имеет ограничение на использование материй"
+		"en"		"This player already has a restriction on the use of items."
+	}
+	"Player is not loaded"
+	{
+		"ru"		"Данный игрок не прошел аутентификацию в БД"
+		"en"		"This player has not been authenticated in the database"
+	}
+	"Player is not banned"
+	{
+		"ru"		"Данный игрок не имеет ограничение на использование материй"
+		"en"		"This player has no restrictions on the use of items"
+	
+	}
+	"The last request has not been completed yet"
+	{
+		"ru"		"Последняя операция еще не была завершена. Попробуйте еще раз!"
+		"en"		"The last operation has not yet been completed. Try again!"
+	}
+	"Query denied"
+	{
+		"ru"		"Отказано в выполнении операции"
+		"en"		"Operation refused"
+	}
+	"Invalid duration"
+	{
+		"ru"		"Указана неверная длительность (1-52600 минут или -1 - перманент)"
+		"en"		"Invalid duration specified (1-52600 minutes or -1 - permanent)"
+	}
+	"Minutes"
+	{
+		"#format"	"{1:i}"
+		"ru"		"{1} минут"
+		"en"		"{1} minutes"
+	}
+	"Permanently"
+	{
+		"ru"		"Навсегда"
+		"en"		"Permanently"
+	}
+	"You have restrict"
+	{
+		"#format"	"{1:s}"
+		"ru"		"Вы имеете ограничение на использование материй (Длительность: {1})"
+		"en"		"You have a restriction on the use of items (Duration: {1})"
+	}
+	"You have not restrict"
+	{
+		"ru"		"Вы не имеете ограничений на использование материй"
+		"en"		"You have no limits on the use of items"
+	}
+	"You were not logged in to the database"
+	{
+		"ru"		"Вы не прошли аутентификацию в БД, перезайдите на сервер."
+		"en"		"You have not been authenticated in the database, reconnect to the server."
+	
+	}
+	"Admin title"
+	{
+		"ru"	"Управление EntWatch"
+		"en"	"Management EntWatch"
+	}
+	"Ban item"
+	{
+		"ru"	"Бан игрока"
+		"en"	"Ban player"
+	}
+	"Unban item"
+	{
+		"ru"	"Снять ебан"
+		"en"	"Remove eban"
+	}
+	"Banned players item"
+	{
+		"ru"	"Список заебаненных"
+		"en"	"Banned list"
+	}
+	"Transfer item"
+	{
+		"ru"	"Передать Item"
+		"en"	"Transfer Item"
+	}
+	"Use item"
+	{
+		"ru"	"Использовать Item"
+		"en"	"Use Item"
+	}
+	"Reload item"
+	{
+		"ru"	"Перезагрузить конфиг"
+		"en"	"Reload config"
+	}
+	"Use items title"
+	{
+		"ru"	"Использовать Item | Выберите игрока:"
+		"en"	"Use Item | Choose the player:"
+	}
+	"Client is unavailbale"
+	{
+		"ru"	"Данный игрок недоступен"
+		"en"	"This player is unavailbale"
+	}
+	"Item is unavailbale"
+	{
+		"ru"	"Данная материя недоступна"
+		"en"	"This Item is unavailbale"
+	}
+	"Ban title"
+	{
+		"ru"	"Забанить игрока"
+		"en"	"Ban player"
+	}
+	"Ban length title"
+	{
+		"#format"	"{1:N}"
+		"ru"	"Забанить игрока: {1}\nУкажите длительность:"
+		"en"	"Ban player: {1}\nSpecify the duration:"
+	}
+	"Assist use admin"
+	{
+		"ru"	"помог использовать"
+		"en"	"helped to use"
+	}
+	"Banned players title"
+	{
+		"ru"	"Список заебаненных игроков"
+		"en"	"Eban players list"
+	}
+	"Banned player title"
+	{
+		"#format"	"{1:N}"
+		"ru"	"Забаненный игрок: {1}"
+		"en"	"Ebanned player: {1}"
+	}
+	"Unban item"
+	{
+		"ru"	"Снять ебан"
+		"en"	"Unrestrict"
+	}
+	"Duration"
+	{
+		"ru"	"Длительность"
+		"en"	"Duration"
+	}
+	"Transfer type item"
+	{
+		"ru"		"[Сменить тип передачи]"
+		"en"		"[Change transfer type]"
+	}
+	"Transfer title"
+	{
+		"#format"	"{1:t}"
+		"ru"		"Передача материи\nТип передачи: {1}\nВыберите получателя:"
+		"en"		"Transfer materias\nTransfer type: {1}\nChoose the receiver:"
+	}
+	
+	"Transfer by target title"
+	{
+		"#format"	"{1:N},{2:t}"
+		"ru"		"Передача материи\nТип передачи: {2}\nПолучатель: {1}\nВыберите игрока:"
+		"en"		"Transfer materias\nTransfer type: {2}\nReceiver: {1}\nChoose the player:"
+	}
+	
+	"Transfer by map title"
+	{
+		"#format"	"{1:N},{2:t}"
+		"ru"		"Передача материи\nТип передачи: {2}\nПолучатель: {1}\nВыберите материю:"
+		"en"		"Transfer materias\nTransfer type: {2}\nReceiver: {1}\nChoose the materia:"
+	}
+	"Map"
+	{
+		"ru"		"Карта"
+		"en"		"Map"
+	}
+	"Player"
+	{
+		"ru"		"Игрок"
+		"en"		"Player"
+	
+	}
+	"No players"
+	{
+		"ru"		"Нет доступных игроков"
+		"en"		"No players"
+	}
+	"No items"
+	{
+		"ru"		"Нет доступных материй"
+		"en"		"No availbale materias"
+	}
+	"Expires"
+	{
+		"ru"		"Истекает"
+		"en"		"Expires"
+	}
+}
