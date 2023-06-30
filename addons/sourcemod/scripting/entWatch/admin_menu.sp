@@ -846,6 +846,8 @@ void ConfigMenu(int client)
 		EditedConfigs[cfg] = true;
 	}
 
+	SetGlobalTransTarget(client);
+
 	Menu menu = new Menu(ConfigMenu_Handler, MenuAction_Cancel | MenuAction_End | MenuAction_Select);
 	menu.SetTitle("%t", "Config title");
 
