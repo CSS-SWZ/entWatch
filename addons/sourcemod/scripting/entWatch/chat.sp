@@ -57,7 +57,7 @@ void PrintToChatItemAction(int item, int action)
 	int team = GetClientTeam(Items[item].Owner);
 	for(int i = 1; i <= MaxClients; i++)
 	{
-		if(!IsClientInGame(i) || IsFakeClient(i))
+		if(!IsClientInGame(i))
 			continue;
 
 		int team2 = GetClientTeam(i);
@@ -81,7 +81,7 @@ stock void PrintToTeam(int team, const char[] format, any ...)
 	char[] buffer = new char[len];
 	for(int i = 1; i <= MaxClients; i++)
 	{
-		if(!IsClientInGame(i) || IsFakeClient(i))
+		if(!IsClientInGame(i))
 			continue;
 
 		int team2 = GetClientTeam(i);
