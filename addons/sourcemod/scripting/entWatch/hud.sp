@@ -5,7 +5,7 @@ static bool Hud[MAXPLAYERS + 1];
 void HudInit()
 {
 	CookieHud = RegClientCookie("entwatch_display", "", CookieAccess_Private);
-	RegConsoleCmd("sm_ehud", Command_EHud);
+	RegConsoleCmd("sm_hud", Command_Hud);
 }
 
 void HudOnMapStart()
@@ -39,10 +39,20 @@ void HudOnClientCookiesCached(int client)
 
 void HudClientReadCookie(int client)
 {
-	if(IsFakeClient(client) || !IsClientInGame(client))
+	if(!IsClientInGame(client))
 		return;
 
 	Hud[client] = true;
+	
+	if(IsFakeClient(client))
+	{
+		if(!IsClientSourceTV(client))
+			Hud[client] = false;
+
+		return;
+	}
+
+
 	if(AreClientCookiesCached(client))
 	{
 		char buffer[4];
@@ -73,7 +83,7 @@ void HudToggleClientHud(int client)
 	}
 }
 
-public Action Command_EHud(int client, int args)
+public Action Command_Hud(int client, int args)
 {
 	HudToggleClientHud(client);	
 	return Plugin_Handled;
@@ -137,21 +147,18 @@ public Action Timer_Hud(Handle hTimer)
 
     for (int i = 1; i <= MaxClients; i++)
     {
-    	if (!IsClientInGame(i) || !Hud[i])
-    		continue;
-
-    	team = GetClientTeam(i) - 1;
-
-    	switch(team)
-    	{
-    		case 0, 1, 2:
-    		{
-    			Handle msg = StartMessageOne("KeyHintText", i);
-    			BfWriteByte(msg, 1);
-    			BfWriteString(msg, buffer[team][currentPages[team]]);
-    			EndMessage();
-    		}
-    	}
+		if (!Hud[i])
+			continue;
+		
+		team = GetClientTeam(i) - 1;
+		
+		if(team < 0)
+			team = 0;
+		
+		Handle msg = StartMessageOne("KeyHintText", i);
+		BfWriteByte(msg, 1);
+		BfWriteString(msg, buffer[team][currentPages[team]]);
+		EndMessage();
     }
     return Plugin_Continue;
 }
