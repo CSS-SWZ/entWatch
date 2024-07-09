@@ -12,6 +12,11 @@ public Action OnWeaponTouch(int client, int weapon)
     if(RestrictClientHasRestrict(client))
         return Plugin_Handled;
 
+    #if defined HALFZOMBIE
+    if(HalfZombie[client])
+        return Plugin_Handled;
+    #endif
+
     return Plugin_Continue;
 }
 
@@ -123,6 +128,11 @@ public Action OnTriggerTouch(int entity, int activator)
 
     if(RestrictClientHasRestrict(activator))
         return Plugin_Handled;
+
+    #if defined HALFZOMBIE
+    if(HalfZombie[activator])
+        return Plugin_Handled;
+    #endif
 
     return Plugin_Continue;
 }

@@ -9,6 +9,7 @@
 
 #define ASSIST_USE
 #define ADMIN_MENU
+#define HALFZOMBIE
 
 bool Late;
 
@@ -19,6 +20,7 @@ bool Late;
 #include "entWatch/client.sp"
 #include "entWatch/chat.sp"
 #include "entWatch/assist_use.sp"
+#include "entWatch/halfzombie.sp"
 #include "entWatch/sdkhook.sp"
 #include "entWatch/dump.sp"
 #include "entWatch/hud.sp"
@@ -63,6 +65,12 @@ public void OnPluginStart()
     DatabaseConnect();
     DumpInit();
     ColorsInit();
+
+    #if defined HALFZOMBIE
+    HookEvent("player_spawn", OnPlayerSpawn);
+    HookEvent("player_team", OnPlayerTeam);
+    #endif
+
     HookEvent("player_death", OnPlayerDeath);
     HookEvent("player_disconnect", OnPlayerDisconnect);
     HookEvent("round_start", OnRoundStart, EventHookMode_PostNoCopy);
@@ -99,7 +107,18 @@ public void OnMapStart()
     ItemsOnMapStart();
     HudOnMapStart();
 
+    #if defined HALFZOMBIE
+	HalfZombieInit();
+    #endif
+
     Late = false;
+}
+
+public void OnConfigsExecuted()
+{
+    #if defined HALFZOMBIE
+	HalfZombieDeterminate();
+    #endif
 }
 
 public void OnMapEnd()
@@ -108,6 +127,19 @@ public void OnMapEnd()
     ConfigOnMapEnd();
 }
 
+#if defined HALFZOMBIE
+public void OnPlayerSpawn(Event event, const char[] name, bool dontBroadcast)
+{
+    int client = GetClientOfUserId(event.GetInt("userid"));
+    HalfZombieClientInit(client);
+}
+
+public void OnPlayerTeam(Event event, const char[] name, bool dontBroadcast)
+{
+    int client = GetClientOfUserId(event.GetInt("userid"));
+    HalfZombieClientInit(client);
+}
+#endif
 public void OnPlayerDeath(Event event, const char[] name, bool dontBroadcast)
 {
     int client = GetClientOfUserId(event.GetInt("userid"));
@@ -127,6 +159,10 @@ public void OnPlayerDisconnect(Event event, const char[] name, bool dontBroadcas
 public void OnRoundStart(Event event, const char[] name, bool dontBroadcast)
 {
     ItemsOnRoundStart();
+
+    #if defined HALFZOMBIE
+    HalfZombieInit();
+    #endif
 }
 
 public void OnRoundEnd(Event event, const char[] name, bool dontBroadcast)
