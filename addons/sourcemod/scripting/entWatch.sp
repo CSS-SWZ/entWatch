@@ -137,7 +137,9 @@ public void OnPlayerSpawn(Event event, const char[] name, bool dontBroadcast)
 public void OnPlayerTeam(Event event, const char[] name, bool dontBroadcast)
 {
     int client = GetClientOfUserId(event.GetInt("userid"));
-    HalfZombieClientInit(client);
+    
+    if(event.GetInt("oldteam") == 2 && event.GetInt("team") != 2)
+        HalfZombieClientInit(client);
 }
 #endif
 public void OnPlayerDeath(Event event, const char[] name, bool dontBroadcast)
