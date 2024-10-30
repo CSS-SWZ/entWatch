@@ -125,6 +125,7 @@ void ConfigBrowseKeyGFL(KeyValues kv)
 
     c.Color[0] = '#';
     kv.GetString("color", c.Color[1], sizeof(c.Color), Colors[COLOR_ITEM]);
+    ColorNameToColorCode(c.Color, sizeof(c.Color));
     
     kv.GetString("filtername", c.Filter, sizeof(c.Filter));
 
