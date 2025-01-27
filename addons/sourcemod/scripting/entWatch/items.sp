@@ -454,6 +454,12 @@ bool ItemIsReady(int item)
 {
     float time = GetGameTime();
 
+    if(Items[item].Wait >= time)
+        return false;
+
+    if (HasEntProp(Items[item].Button, Prop_Data, "m_bLocked") && GetEntProp(Items[item].Button, Prop_Data, "m_bLocked"))
+        return false;
+
     switch(Configs[Items[item].Config].Mode)
     {
         case MODE_PROTECT:
@@ -491,6 +497,17 @@ bool ItemIsReady(int item)
 void ItemReload(int item)
 {
     float time = GetGameTime();
+
+    // Fix ghost using
+    time += GetTickInterval() * 5.0;
+
+    if (HasEntProp(Items[item].Button, Prop_Data, "m_flWait"))
+	{
+        float wait = GetEntPropFloat(Items[item].Button, Prop_Data, "m_flWait");
+
+        if(wait > 0.0)
+            Items[item].Wait = time + wait;
+	}
     
     switch(Configs[Items[item].Config].Mode)
     {
@@ -515,7 +532,6 @@ void ItemReload(int item)
             {
                 Items[item].Cooldown = time + Configs[Items[item].Config].Cooldown;
                 Items[item].Uses = 0;
-            
             }
         }
     }
@@ -620,6 +636,7 @@ void ItemClear(int item)
     Items[item].Owner = 0;
     Items[item].Uses = 0;
     Items[item].Cooldown = 0.0;
+    Items[item].Wait = 0.0;
     Items[item].Transfered = false;
     Items[item].RemovedButton = false;
 }

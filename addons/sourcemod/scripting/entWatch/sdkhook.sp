@@ -67,9 +67,6 @@ public Action OnButtonPress(int button, int activator, int caller, UseType type,
     if(RestrictClientHasRestrict(activator))
         return Plugin_Handled;
 
-    if (HasEntProp(Items[item].Button, Prop_Data, "m_bLocked") && GetEntProp(Items[item].Button, Prop_Data, "m_bLocked"))
-        return Plugin_Handled;
-
     if(!Items[item].Compare && !Items[item].Relay && !ItemIsReady(item))
         return Plugin_Handled;
 

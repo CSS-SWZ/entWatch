@@ -20,6 +20,7 @@ enum struct Item
     int Uses;
 
     float Cooldown;
+    float Wait;
 
     bool Transfered;
     bool RemovedButton;

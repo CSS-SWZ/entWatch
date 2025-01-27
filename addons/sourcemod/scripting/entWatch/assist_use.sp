@@ -29,6 +29,7 @@ void AssistUseInit()
 	HookEntityOutput("func_button", "OnPressed", AssistUseOnButtonPressed);
 	HookEntityOutput("func_door", "OnOpen", AssistUseOnDoorOpen);
 	HookEntityOutput("func_door_rotating", "OnOpen", AssistUseOnDoorOpen);
+	HookEntityOutput("prop_door_rotating", "OnOpen", AssistUseOnPropDoorOpen);
 }
 
 public Action Command_AssistUse(int client, int args)
@@ -115,6 +116,19 @@ public void AssistUseOnDoorOpen(const char[] output, int caller, int activator, 
 	PressButtonTime[client] = GetGameTime();
 }
 
+public void AssistUseOnPropDoorOpen(const char[] output, int caller, int activator, float delay)
+{
+	if(!AssistUse_Toggle)
+		return;
+
+	int client = GetEntPropEnt(caller, Prop_Data, "m_hActivator");
+
+	if(client <= 0 || client > MaxClients)
+		return;
+
+	PressButtonTime[client] = GetGameTime();
+}
+
 public void AssistUseOnButtonPressed(const char[] output, int caller, int activator, float delay)
 {
 	if(!AssistUse_Toggle || activator < 0 || activator > MaxClients || !caller)
@@ -152,7 +166,16 @@ void AssistUseOnPlayerRunCmdPost(int client, int buttons)
 		return;
 	}
 	AssistUseTime[client] = time;
+
 	if(!AssistUseIsValidTarget(client))
+	{
+		prevButtons[client] = buttons;
+		return;
+	}
+
+	int items_count = AssistUseGetClientItemsCount(client);
+
+	if(items_count != 1)
 	{
 		prevButtons[client] = buttons;
 		return;
@@ -236,7 +259,12 @@ bool AssistUseIsValidTarget(int client)
 	if(StrContains(classname, "button", false) != -1)
 		return false;
 
-	if(StrContains(classname, "door", false) != -1)
+	if(!strncmp(classname, "prop_d", 6, false))
+	{
+		return false;
+	}
+
+	if(!strncmp(classname, "func_door", 9, false))
 	{
 		int flags = GetEntProp(target, Prop_Data, "m_spawnflags");
 
@@ -265,4 +293,18 @@ stock int AssistUseFindClientItem(int client)
 	}
 
 	return -1;
+}
+
+stock int AssistUseGetClientItemsCount(int client)
+{
+	int count;
+	int item = -1;
+
+	while((item = ItemFindClientItem(client, item)) != -1)
+	{
+		if(Items[item].Button)
+			++count;
+	}
+
+	return count;
 }
