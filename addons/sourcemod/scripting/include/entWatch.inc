@@ -1,8 +1,8 @@
-#if defined entWatch_included
+#if defined _entWatch_included
 	#endinput
 #endif
 
-#define entWatch_included
+#define _entWatch_included
 
 #include "entWatch/Config.inc"
 #include "entWatch/Item.inc"
