@@ -7,6 +7,8 @@
 
 #pragma newdecls required
 
+#define BOTOX_SM
+
 #define ASSIST_USE
 #define ADMIN_MENU
 #define HALFZOMBIE
@@ -173,10 +175,24 @@ public void OnRoundEnd(Event event, const char[] name, bool dontBroadcast)
     ItemsOnRoundEnd();
 }
 
+#if defined BOTOX_SM
 public void OnEntitySpawned(int entity, const char[] classname)
 {
     ItemsOnEntitySpawned(entity);
 }
+#else
+public void OnEntityCreated(int entity, const char[] classname)
+{
+	if (IsValidEntity(entity))
+		SDKHook(entity, SDKHook_SpawnPost, SDKHook_OnEntitySpawnPost);
+}
+
+public void SDKHook_OnEntitySpawnPost(int entity)
+{
+	if (IsValidEntity(entity))
+		ItemsOnEntitySpawned(entity);
+}
+#endif
 
 public void OnEntityDestroyed(int entity)
 {

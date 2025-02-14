@@ -25,15 +25,9 @@ void ItemsOnRoundStart()
     RoundStarted = true;
     
     int entity = INVALID_ENT_REFERENCE;
-    char classname[64];
 
     while((entity = FindEntityByClassname(entity, "*")) != -1)
-    {
-        if(GetEntityClassname(entity, classname, sizeof(classname)))
-        {
-            OnEntitySpawned(entity, classname);
-        }
-    }
+        ItemsOnEntitySpawned(entity);
 }
 
 void ItemsOnRoundEnd()
