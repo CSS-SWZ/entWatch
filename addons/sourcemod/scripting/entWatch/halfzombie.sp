@@ -1,4 +1,5 @@
 #if !defined HALFZOMBIE
+    #warning "Halfzombie module: not included"
 	#endinput
 #endif
 

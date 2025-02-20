@@ -37,7 +37,7 @@ public Action Command_Spawn(int client, int args)
 // DarkerZ entwatch
 bool SpawnItem(int config, int receiver, int admin)
 {
-    if(!Configs[config].Template)
+    if(!Configs[config].Template[0])
     	return false;
     
     int entity = -1;
