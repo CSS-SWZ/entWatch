@@ -29,6 +29,7 @@ public void __pl_entWatch_SetNTVOptional()
 	MarkNativeAsOptional("entWatch_GetItemsCount");
 	MarkNativeAsOptional("entWatch_GetConfig");
 	MarkNativeAsOptional("entWatch_GetItem");
+	MarkNativeAsOptional("entWatch_ClientHasItem");
 }
 #endif
 
@@ -40,6 +41,8 @@ native int entWatch_GetItemsCount();
 
 native bool entWatch_GetConfig(int config, any[] cache, int size = sizeof(Config));
 native bool entWatch_GetItem(int item, any[] cache, int size = sizeof(Item));
+
+native bool entWatch_ClientHasItem(int client);
 
 forward void entWatch_OnConfigLoaded();
 forward void entWatch_OnDatabaseLoaded();

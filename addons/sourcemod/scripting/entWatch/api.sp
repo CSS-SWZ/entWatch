@@ -21,6 +21,8 @@ void APIInit()
     CreateNative("entWatch_GetItemsCount", Native_GetItemsCount);
     CreateNative("entWatch_GetConfig", Native_GetConfig);
     CreateNative("entWatch_GetItem", Native_GetItem);
+
+    CreateNative("entWatch_ClientHasItem", Native_ClientHasItem);
 }
 
 void APIOnConfigLoaded()
@@ -117,4 +119,14 @@ public any Native_GetItem(Handle plugin, int numParams)
     }
 
     return (SetNativeArray(2, Items[item], size) == SP_ERROR_NONE);
+}
+
+public int Native_ClientHasItem(Handle plugin, int numParams)
+{
+    int client = GetNativeCell(1);
+
+    if(ItemFindClientItem(client) != -1)
+        return 1;
+
+    return 0;
 }
