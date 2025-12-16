@@ -9,6 +9,7 @@
 
 #define BOTOX_SM
 
+#define HUD
 #define ASSIST_USE
 #define ADMIN_MENU
 #define HALFZOMBIE
@@ -58,7 +59,10 @@ public void OnPluginStart()
     LoadTranslations("common.phrases");
     LoadTranslations("entWatch.phrases");
 
+    #if defined HUD
     HudInit();
+    #endif
+
     RestrictInit();
     TransferInit();
     SpawnInit();
@@ -107,7 +111,10 @@ public void OnMapStart()
 {
     ConfigOnMapStart();
     ItemsOnMapStart();
+
+    #if defined HUD
     HudOnMapStart();
+    #endif
 
     #if defined HALFZOMBIE
 	HalfZombieInit();
@@ -125,7 +132,10 @@ public void OnConfigsExecuted()
 
 public void OnMapEnd()
 {
+    #if defined HUD
     HudOnMapEnd();
+    #endif
+
     ConfigOnMapEnd();
 }
 

@@ -1,3 +1,7 @@
+#if !defined HUD
+	#endinput
+#endif
+
 static Handle TimerHud;
 static Handle CookieHud;
 static bool Hud[MAXPLAYERS + 1];

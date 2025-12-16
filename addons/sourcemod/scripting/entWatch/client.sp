@@ -27,7 +27,9 @@ public void OnClientPutInServer(int client)
 
     GetClientAuthId(client, AuthId_Steam2, Clients[client].SteamID, sizeof(Clients[].SteamID), true);
 
+    #if defined HUD
     HudOnClientPutInServer(client);
+    #endif
 
     SDKHook(client, SDKHook_WeaponEquipPost, OnWeaponPickup);
     SDKHook(client, SDKHook_WeaponDropPost, OnWeaponDrop);
@@ -76,13 +78,17 @@ public void SQL_Callback_SelectBans(Database db, DBResultSet results, const char
 
 public void OnClientCookiesCached(int client)
 {
+    #if defined HUD
     HudOnClientCookiesCached(client);
+    #endif
 }
 
 public void OnClientDisconnect(int client)
 {
+    #if defined HUD
     HudOnClientDisconnect(client);
-
+    #endif
+    
     #if defined ASSIST_USE
     AssistUseOnClientDisconnect(client);
     #endif
