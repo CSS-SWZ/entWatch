@@ -48,7 +48,7 @@ void HalfZombieDeterminate()
 	char buffer[PLATFORM_MAX_PATH];
 	cvar.GetString(buffer, sizeof(buffer));
 
-	if (StrContains(buffer, "halfzombie", false) != -1)
+	if (StrContains(buffer, "halfzombie", false) != -1 || StrContains(buffer, "old", false) != -1)
 		HalfZombieEnabled = true;
 }
 
