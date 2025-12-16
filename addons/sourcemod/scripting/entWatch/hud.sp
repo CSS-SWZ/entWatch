@@ -155,6 +155,9 @@ public Action Timer_Hud(Handle hTimer)
 		if(team < 0)
 			team = 0;
 		
+		if(!buffer[team][currentPages[team]][0])
+			continue;
+		
 		Handle msg = StartMessageOne("KeyHintText", i);
 		BfWriteByte(msg, 1);
 		BfWriteString(msg, buffer[team][currentPages[team]]);

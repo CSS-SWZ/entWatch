@@ -38,6 +38,7 @@ void ConfigOnMapStart()
 
     char map[64];
     GetCurrentMap(map, sizeof(map));
+    StringToLowercase(map);
     ConfigParse(map);
 }
 
