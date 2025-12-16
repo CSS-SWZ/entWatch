@@ -63,6 +63,10 @@ bool ConfigLoad(const char[] path)
     if(!kv.ImportFromFile(path))
         return false;
 
+    #if defined HUD
+    HudConfigLoad(kv);
+    #endif
+
     #if defined ASSIST_USE
     AssistUseConfigLoad(kv);
     #endif

@@ -2,6 +2,7 @@
 	#endinput
 #endif
 
+static bool hud_enabled;
 static Handle TimerHud;
 static Handle CookieHud;
 static bool Hud[MAXPLAYERS + 1];
@@ -10,6 +11,11 @@ void HudInit()
 {
 	CookieHud = RegClientCookie("entwatch_display", "", CookieAccess_Private);
 	RegConsoleCmd("sm_hud", Command_Hud);
+}
+
+void HudConfigLoad(KeyValues kv)
+{
+    hud_enabled = !!(kv.GetNum("hud", 1));
 }
 
 void HudOnMapStart()
@@ -24,10 +30,14 @@ void HudOnMapEnd()
 
 void HudCreateTimer()
 {
+	delete TimerHud;
+
 	if(!Configs_Count)
 		return;
 
-	delete TimerHud;
+	if(!hud_enabled)
+		return;
+
 	TimerHud = CreateTimer(1.0, Timer_Hud, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 }
 
