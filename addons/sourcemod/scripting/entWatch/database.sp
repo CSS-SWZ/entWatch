@@ -22,7 +22,7 @@ void DatabaseConnect()
 	{
 		char buffer[256];
 		DB = SQLite_UseDatabase("entwatch", buffer, 256);
-		ConnectCallBack(DB, buffer, 1);
+		ConnectCallBack(DB, buffer, 0);
 	}
 }
 
@@ -34,31 +34,26 @@ public void ConnectCallBack(Database db, const char[] error, int data)
 		return;
 	}
 	DB = db;
-		
-	if(data == 1)
+
+	// Драйвер определяем всегда. Блок entwatch в databases.cfg может описывать
+	// и MySQL, и SQLite, а SQLite_UseDatabase() всегда даёт sqlite (dbi.inc:506).
+	char buffer[16];
+	DBDriver hDBDriver = DB.Driver;
+	hDBDriver.GetIdentifier(buffer, sizeof(buffer));
+
+	if (!strcmp(buffer, "mysql", false))
 	{
-		char buffer[16];
-		DBDriver hDBDriver = DB.Driver;
-		hDBDriver.GetIdentifier(buffer, sizeof(buffer));
-		
-		if (!strcmp(buffer, "mysql", false))
-		{
-			SQLite = false;
-		}
-		else if (!strcmp(buffer, "sqlite", false))
-		{
-			SQLite = true;
-		}
-		else
-		{
-			SetFailState("ConnectCallBack: Driver \"%s\" is not supported!", buffer);
-		}
+		SQLite = false;
 	}
-	else
+	else if (!strcmp(buffer, "sqlite", false))
 	{
 		SQLite = true;
 	}
-		
+	else
+	{
+		SetFailState("ConnectCallBack: Driver \"%s\" is not supported!", buffer);
+	}
+
 	if(SQLite)
 	{
 		DB.Query(SQL_Callback_CreateTables, "CREATE TABLE IF NOT EXISTS `ebans` (\
@@ -67,8 +62,8 @@ public void ConnectCallBack(Database db, const char[] error, int data)
 																`pip` VARCHAR(16) NOT NULL default 'unknown',\
 																`aid` INTEGER NOT NULL default '0',\
 																`aname` VARCHAR(32) NOT NULL default 'unknown',\
-																`duration` INTEGER UNSIGNED NOT NULL,\
-																`expires` INTEGER UNSIGNED NOT NULL);");
+																`duration` INTEGER NOT NULL,\
+																`expires` INTEGER NOT NULL);");
 		
 	}
 	else
@@ -83,13 +78,12 @@ public void ConnectCallBack(Database db, const char[] error, int data)
 																`pip` varchar(16) NOT NULL default 'unknown',\
 																`aid` int NOT NULL default '0',\
 																`aname` varchar(32) NOT NULL default 'unknown',\
-																`duration` int unsigned NOT NULL,\
-																`expires` int unsigned NOT NULL\
+																`duration` int NOT NULL,\
+																`expires` int NOT NULL\
 																) DEFAULT CHARSET=" ... MYSQL_CHARSET ... ";");
 	}
 							  
 		
-	DB.SetCharset("utf8");
 }
 
 public void SQL_Callback_CreateTables(Database hDatabase, DBResultSet results, const char[] error, int iData)

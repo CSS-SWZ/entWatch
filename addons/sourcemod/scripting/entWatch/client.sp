@@ -54,23 +54,28 @@ void ClientAuth(int client)
 
 public void SQL_Callback_SelectBans(Database db, DBResultSet results, const char[] error, int userid)
 {
-    if(error[0])
-    {
-        LogError("SQL_Callback_SelectBans() : %s", error);
-    	return;
-    }
-
     int client = GetClientOfUserId(userid);
 
     if(client == 0)
         return;
 
-    if(results.FetchRow())
+    // Проверяем именно results: строка ошибки может остаться пустой при неудаче (dbi.inc:334-337).
+    if(results == null)
     {
-        RestrictCacheClientBan(client, results);
+        // Ответа от БД нет - значит и рестрикта нет. Тот же fail-open,
+        // что и в RestrictClientHasRestrict(), иначе игрок навсегда останется
+        // без права поднимать предметы (OnWeaponTouch).
+        LogError("SQL_Callback_SelectBans() : %s", error);
     }
+    else
+    {
+        if(results.FetchRow())
+        {
+            RestrictCacheClientBan(client, results);
+        }
 
-    RestrictLoadClientSummBans(client);
+        RestrictLoadClientSummBans(client);
+    }
 
     Clients[client].Authorized = true;
     APIOnClientLoaded(client);
