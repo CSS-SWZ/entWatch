@@ -533,7 +533,7 @@ public int TransferByMapMenu_Handler(Menu menu, MenuAction action, int client, i
 
 			if(Items[item].Owner)
 			{
-				PrintToChat2(client, "\x07%s%t", Colors[COLOR_OTHER], "Materia is unavailbale");
+				PrintToChat2(client, "\x07%s%t", Colors[COLOR_OTHER], "Item is unavailbale");
 				TransferMenu(client);
 				return 0;
 			}
@@ -630,7 +630,7 @@ public int TransferByTargetMenu_Handler(Menu menu, MenuAction action, int client
 			}
 			if(Items[item].Owner != target)
 			{
-				PrintToChat2(client, "%t", "Materia is unavailbale");
+				PrintToChat2(client, "%t", "Item is unavailbale");
 				TransferMenu(client);
 				return 0;
 			}

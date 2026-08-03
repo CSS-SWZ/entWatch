@@ -138,3 +138,15 @@ stock int ClientGetByAccount(int account)
 	
 	return 0;
 }
+
+// Возвращает userid игрока. Для серверной консоли (client == 0) возвращает 0:
+// GetClientUserId() на нулевом индексе - ошибка натива, а не 0.
+int ClientGetUserId(int client)
+{
+	if(client == 0)
+	{
+		return 0;
+	}
+
+	return GetClientUserId(client);
+}

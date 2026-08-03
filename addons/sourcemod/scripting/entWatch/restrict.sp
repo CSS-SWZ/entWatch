@@ -274,14 +274,19 @@ void RestrictClientBan(int client, int admin, int duration)
     DataPack pack = new DataPack();
     pack.WriteCell(GetClientUserId(client));
     pack.WriteCell(admin);
-    pack.WriteCell(GetClientUserId(admin));
+    pack.WriteCell(ClientGetUserId(admin));
     pack.WriteCell(duration);
     pack.WriteCell(expires);
     pack.WriteCell(Clients[admin].Account);
     pack.WriteString(names[0]);
     pack.WriteString(names[1]);
 
-    DB_Query(SQL_Callback_BanClient, pack, DBPrio_High, INSERT_BAN, Clients[client].Account, namesDb[0], ip, Clients[admin].Account, namesDb[1], duration * 60, expires);
+    // names[0]/namesDb[0] - имя админа, names[1]/namesDb[1] - имя игрока.
+    // В таблице pname - игрок, aname - админ, поэтому порядок здесь обратный.
+    DB_Query(SQL_Callback_BanClient, pack, DBPrio_High, INSERT_BAN,
+             Clients[client].Account, namesDb[1], ip,
+             Clients[admin].Account, namesDb[0],
+             duration * 60, expires);
 }
 
 public void SQL_Callback_BanClient(Database db, DBResultSet results, const char[] error, DataPack pack)
@@ -313,7 +318,7 @@ public void SQL_Callback_BanClient(Database db, DBResultSet results, const char[
     	return;
     }
         
-    if(IsClientInGame(client))
+    if(client != 0 && IsClientInGame(client))
     {
     	Restricts[client].Admin = adminid;
     	Restricts[client].Duration = duration * 60;
@@ -372,7 +377,7 @@ void RestrictClientUnBan(int client, int admin)
     DataPack pack = new DataPack();
     pack.WriteCell(GetClientUserId(client));
     pack.WriteCell(admin);
-    pack.WriteCell(GetClientUserId(admin));
+    pack.WriteCell(ClientGetUserId(admin));
     pack.WriteString(names[0]);
     pack.WriteString(names[1]);
 
@@ -402,7 +407,7 @@ public void SQL_Callback_UnBan(Database db, DBResultSet results, const char[] er
 		return;
 	}
 	
-	if(IsClientInGame(client))
+	if(client != 0 && IsClientInGame(client))
 	{
 		Restricts[client].Admin = 0;
 		Restricts[client].Duration = 0;
@@ -470,20 +475,29 @@ void RestrictAddBan(int duration, const char[] steamid, const char[] ip, int adm
     {
     	char name[64];
     	GetClientName(admin, name, sizeof(name));
+
+    	// Имя админа и введённый IP подставляются в запрос строковыми литералами -
+    	// экранируем их, как это делает RestrictClientBan().
+    	char nameDb[MAX_NAME_LENGTH * 2 + 1];
+    	char ipDb[16 * 2 + 1];
+
+    	DB.Escape(name, nameDb, sizeof(nameDb));
+    	DB.Escape(ip, ipDb, sizeof(ipDb));
+
     	DataPack pack = new DataPack();
     	pack.WriteString(steamid);
     	pack.WriteString(ip);
     	pack.WriteString(name);
     	
     	pack.WriteCell(admin);
-    	pack.WriteCell(GetClientUserId(admin));
+    	pack.WriteCell(ClientGetUserId(admin));
     	pack.WriteCell(id);
     	pack.WriteCell(Restricts[admin].Admin);
     	pack.WriteCell(expires);
     	pack.WriteCell(duration);
         
 
-    	DB_Query(SQL_Callback_AddBan, pack, DBPrio_Normal, INSERT_ADD_BAN, id, ip, Clients[admin].Account, name, duration * 60, expires);
+    	DB_Query(SQL_Callback_AddBan, pack, DBPrio_Normal, INSERT_ADD_BAN, id, ipDb, Clients[admin].Account, nameDb, duration * 60, expires);
     }
 }
 
@@ -610,7 +624,7 @@ void RestrictDeleteBan(const char[] steamid, const char[] ip, int admin)
 		pack.WriteString(name);
 		
 		pack.WriteCell(admin);
-		pack.WriteCell(GetClientUserId(admin));
+		pack.WriteCell(ClientGetUserId(admin));
 		pack.WriteCell(id);
 		DB.Query(SQL_Callback_DeleteBanClient, buffer, pack);
 	}
