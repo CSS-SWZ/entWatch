@@ -605,7 +605,7 @@ stock void ItemFormat(int item, char[] finalBuffer, int maxlength)
 
 void ItemRemove(int item)
 {
-    for(int i = item; i < Items_Count; i++)
+    for(int i = item; i < Items_Count - 1; i++)
     {
         Items[i] = Items[i + 1];
     }

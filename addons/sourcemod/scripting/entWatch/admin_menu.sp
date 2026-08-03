@@ -28,7 +28,10 @@ void AdminMenu(int client)
 	}
 	AddMenuItem2(menu, _, "transfer", "%t", "Transfer item");
 	#if defined ASSIST_USE
-	AddMenuItem2(menu, _, "use", "%t", "Use item");
+	if(flags & (ADMFLAG_BAN | ADMFLAG_RCON | ADMFLAG_ROOT))
+	{
+		AddMenuItem2(menu, _, "use", "%t", "Use item");
+	}
 	#endif
 	if(flags & (ADMFLAG_RCON | ADMFLAG_ROOT))
 	{
@@ -899,8 +902,15 @@ public int ConfigMenu_Handler(Menu menu, MenuAction action, int client, int inde
 			{
 				case 0:
 				{
-					EditedConfigs[EditClientsConfigs[client].Config] = false;
-					RemoveConfig(EditClientsConfigs[client].Config);
+					int config = EditClientsConfigs[client].Config;
+
+					// Состояние редактора нужно сбросить до удаления: RemoveConfig()
+					// сдвигает Configs[], и сохранённый индекс начнёт указывать
+					// на соседний конфиг - следующая реплика админа ушла бы в него.
+					EditedConfigs[config] = false;
+					EditClientsConfigs[client].Clear();
+
+					RemoveConfig(config);
 					ConfigsMenu(client);
 				}
 				case 1:

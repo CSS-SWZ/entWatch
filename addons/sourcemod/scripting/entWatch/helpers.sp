@@ -25,21 +25,33 @@ stock void UTIL_GetSteamIDFromAccountID(int account, char[] steamid, int maxlen)
 
 stock void RemoveConfig(int config)
 {
-	for(int i = config; i < Configs_Count; i++)
+	for(int i = config; i < Configs_Count - 1; i++)
 	{
 		Configs[i] = Configs[i + 1];
-
 	}
+
+	Configs_Count--;
+
 	RemoveItemByConfig(config);
 }
 
 stock void RemoveItemByConfig(int config)
 {
-	for(int i = 0; i < Items_Count; i++)
+	int i = 0;
+
+	while(i < Items_Count)
 	{
 		if(Items[i].Config == config)
 		{
+			// Слот нужно освободить целиком: снять хуки с ещё живых кнопки,
+			// триггера, compare и relay, иначе они продолжат срабатывать на
+			// предмет, которого больше нет.
+			ItemUnhook(i);
 			ItemClear(i);
+			ItemRemove(i);
+
+			// ItemRemove() сдвинул массив вниз - на этом же индексе теперь
+			// стоит следующий предмет, поэтому i не увеличиваем.
 			continue;
 		}
 
@@ -48,6 +60,7 @@ stock void RemoveItemByConfig(int config)
 			Items[i].Config--;
 		}
 
+		i++;
 	}
 }
 
