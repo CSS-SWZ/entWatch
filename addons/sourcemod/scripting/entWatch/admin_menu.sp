@@ -957,7 +957,10 @@ bool AdminOnClientSayCommand(int client, const char[] args)
 		}
 		case 2:
 		{
-			strcopy(Configs[cfg].Color[1], sizeof(Configs[].Color), args);
+			// Под текст цвета отведено на байт меньше: Color[0] занят символом '#'.
+			// С полным размером strcopy() положил бы терминатор в Filter[0]
+			// и стёр бы имя фильтра, на котором держится защита старых карт.
+			strcopy(Configs[cfg].Color[1], sizeof(Configs[].Color) - 1, args);
 		}
 		case 3:
 		{
@@ -1027,6 +1030,7 @@ void AdminConfigSave()
 	if(!kv.ImportFromFile(buffer))
 	{
 		LogMessage("File %s not founded", buffer);
+		delete kv;
 		return;
 	}
 

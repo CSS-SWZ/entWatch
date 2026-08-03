@@ -38,31 +38,11 @@ void ItemsOnRoundEnd()
 
 void ItemsOnPluginEnd()
 {
+    // У предмета может быть сразу и кнопка, и триггер, и compare, и relay,
+    // поэтому снимаем всё разом - ItemUnhook() проверяет каждое поле само.
     for(int i = 0; i < Items_Count; i++)
     {
-        if(Items[i].Button)
-        {
-            SDKUnhook(Items[i].Button, SDKHook_Use, OnButtonPress);
-            continue;
-        }
-        if(Items[i].Trigger)
-        {
-            SDKUnhook(Items[i].Trigger, SDKHook_StartTouch, OnTriggerTouch);
-            SDKUnhook(Items[i].Trigger, SDKHook_EndTouch, OnTriggerTouch);
-            SDKUnhook(Items[i].Trigger, SDKHook_Touch, OnTriggerTouch);
-            continue;
-        }
-        if(Items[i].Compare)
-        {
-            UnhookSingleEntityOutput(Items[i].Compare, "OnEqualTo", Compare_OnEqualTo);
-            continue;
-        }
-        if(Items[i].Relay)
-        {
-            UnhookSingleEntityOutput(Items[i].Relay, "OnTrigger", Relay_OnTrigger);
-            continue;
-        }
-
+        ItemUnhook(i);
     }
 }
 
@@ -242,7 +222,7 @@ void ItemProcessCheckButton(int item)
     if(Items[item].Button)
         return;
 
-    CreateTimer(0.5, Timer_ItemFindButton, item);
+    CreateTimer(0.5, Timer_ItemFindButton, item, TIMER_FLAG_NO_MAPCHANGE);
 }
 
 public Action Timer_ItemFindButton(Handle timer, int item)

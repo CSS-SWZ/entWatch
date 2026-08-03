@@ -104,7 +104,24 @@ public Action Command_Hud(int client, int args)
 }
 
 const int MAX_PAGES = 4;
+const int MAX_PAGE_LENGTH = 256;
 const int TICKS_UPDATE_COUNT = 5;
+
+// Дописывает строку в постраничный буфер команды. Когда страницы кончились,
+// строка отбрасывается: pagesCount за пределами MAX_PAGES - это обращение
+// за границу buffer[][MAX_PAGES][MAX_PAGE_LENGTH].
+void HudBufferAddLine(char buffer[][MAX_PAGE_LENGTH], int &pagesCount, const char[] line)
+{
+	if(strlen(buffer[pagesCount]) + strlen(line) + 2 >= MAX_PAGE_LENGTH)
+	{
+		if(pagesCount + 1 >= MAX_PAGES)
+			return;
+
+		pagesCount++;
+	}
+
+	StrCat(buffer[pagesCount], MAX_PAGE_LENGTH, line);
+}
 
 public Action Timer_Hud(Handle hTimer)
 {
@@ -112,7 +129,7 @@ public Action Timer_Hud(Handle hTimer)
     	return Plugin_Continue;
 
     int pagesCount[3];
-    char buffer[3][MAX_PAGES][256];
+    char buffer[3][MAX_PAGES][MAX_PAGE_LENGTH];
     char line[128];
 
     static int team;
@@ -127,10 +144,7 @@ public Action Timer_Hud(Handle hTimer)
     	{
     		case 1, 2:
     		{
-                if (strlen(buffer[team][pagesCount[team]]) + strlen(line) + 2 >= sizeof(buffer[][]))
-    	            pagesCount[team]++;
-
-                StrCat(buffer[team][pagesCount[team]], sizeof(buffer[][]), line);
+                HudBufferAddLine(buffer[team], pagesCount[team], line);
     		}
     		default:
     		{
@@ -139,10 +153,7 @@ public Action Timer_Hud(Handle hTimer)
     		}
     	}
 
-        if (strlen(buffer[0][pagesCount[0]]) + strlen(line) + 2 >= sizeof(buffer[][]))
-            pagesCount[0]++;
-
-        StrCat(buffer[0][pagesCount[0]], sizeof(buffer[][]), line);
+        HudBufferAddLine(buffer[0], pagesCount[0], line);
     }
 
     static int currentPages[3];
