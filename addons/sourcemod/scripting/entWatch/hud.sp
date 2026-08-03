@@ -99,7 +99,15 @@ void HudToggleClientHud(int client)
 
 public Action Command_Hud(int client, int args)
 {
-	HudToggleClientHud(client);	
+	// AreClientCookiesCached() на нулевом индексе - ошибка натива,
+	// да и переключать HUD серверной консоли нечего.
+	if(client == 0)
+	{
+		ReplyToCommand(client, "%t %t", "Tag", "Command is in-game only");
+		return Plugin_Handled;
+	}
+
+	HudToggleClientHud(client);
 	return Plugin_Handled;
 }
 

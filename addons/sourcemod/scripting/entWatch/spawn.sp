@@ -7,7 +7,7 @@ public Action Command_Spawn(int client, int args)
 {
     if(args < 1)
     {
-        ReplyToCommand(client, "%t %t!\nSyntax: sm_espawnitem <itemname> [receiver]", "Tag", "Incorrect usage");
+        ReplyToCommand(client, "%t %t!\nSyntax: sm_espawn <shortname> [receiver]", "Tag", "Incorrect usage");
         return Plugin_Handled;
     }
 
@@ -28,6 +28,16 @@ public Action Command_Spawn(int client, int args)
 
         if(receiver == -1)
             return Plugin_Handled;
+    }
+
+    // Предмет спавнится по координатам получателя, так что получатель обязан быть
+    // в игре. С серверной консоли без второго аргумента receiver == 0, и падение
+    // GetClientAbsOrigin() случалось уже после CreateEntityByName() - недоделанный
+    // env_entity_maker оставался на карте.
+    if(receiver < 1 || !IsClientInGame(receiver))
+    {
+        ReplyToCommand(client, "%t %t!\nSyntax: sm_espawn <shortname> [receiver]", "Tag", "Incorrect usage");
+        return Plugin_Handled;
     }
 
     SpawnItem(item, receiver, client);

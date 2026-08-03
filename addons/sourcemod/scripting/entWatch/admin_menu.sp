@@ -9,6 +9,14 @@ void AdminMenuInit()
 
 public Action Command_Admin(int client, int args)
 {
+	// Меню серверной консоли не показать, а GetUserFlagBits() и Menu.Display()
+	// на нулевом индексе - ошибка натива.
+	if(client == 0)
+	{
+		ReplyToCommand(client, "%t %t", "Tag", "Command is in-game only");
+		return Plugin_Handled;
+	}
+
 	AdminMenu(client);
 	return Plugin_Handled;
 }

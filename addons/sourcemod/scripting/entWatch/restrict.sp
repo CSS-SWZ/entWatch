@@ -50,7 +50,7 @@ public Action Command_Status(int client, int args)
 	char buffer[64];
 	if(args)
 	{
-		GetCmdArg(1, buffer, 32);
+		GetCmdArg(1, buffer, sizeof(buffer));
 		target = FindTarget(client, buffer, true, false);
 		
 		if(target <= 0)
