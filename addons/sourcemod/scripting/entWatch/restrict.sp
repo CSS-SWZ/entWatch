@@ -190,7 +190,9 @@ void RestrictLoadClientSummBans(int client)
 
 public void SQL_Callback_SelectSummBans(Database db, DBResultSet results, const char[] error, int userid)
 {
-    if(error[0])
+    // Проверяем results, а не строку ошибки: она может остаться пустой
+    // при неудаче (dbi.inc:334-337), и FetchRow() ушёл бы в null.
+    if(results == null)
     {
         LogError("SQL_Callback_SelectSummBans() : %s", error);
     	return;

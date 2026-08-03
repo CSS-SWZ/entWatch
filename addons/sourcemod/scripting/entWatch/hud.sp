@@ -103,12 +103,18 @@ void HudOnClientDisconnect(int client)
 
 void HudToggleClientHud(int client)
 {
+	// Пока cookies не загружены, переключать бессмысленно: сохранить выбор
+	// некуда, а OnClientCookiesCached() тут же перезапишет его сохранённым
+	// значением. Раньше это происходило молча.
+	if(!AreClientCookiesCached(client))
+	{
+		PrintToChat2(client, "%t", "Cookies not loaded");
+		return;
+	}
+
 	Hud[client] = !Hud[client];
 	PrintToChat2(client, "%t: %t", "Hud", Hud[client] ? "On":"Off");
-	if(AreClientCookiesCached(client))
-	{
-		SetClientCookie(client, CookieHud, Hud[client] ? "1":"0");
-	}
+	SetClientCookie(client, CookieHud, Hud[client] ? "1":"0");
 }
 
 public Action Command_Hud(int client, int args)

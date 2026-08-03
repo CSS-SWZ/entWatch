@@ -40,12 +40,24 @@ public void OnClientPutInServer(int client)
 
 void ClientAuth(int client)
 {
-    if(DB == null)
+    Clients[client].Account = GetSteamAccountID(client);
+
+    // Гейт именно по DBLoaded, а не по "DB != null": на пути SQLite соединение
+    // готово сразу, а таблиц ещё нет - запрос из OnPluginStart уходил впустую,
+    // после чего SQL_Callback_CreateTables() авторизовал того же игрока второй
+    // раз, и entWatch_OnClientLoaded улетал дважды.
+    if(!DBLoaded)
+    {
+        // Базы нет - значит нет и рестриктов: тот же fail-open, что и в
+        // RestrictClientHasRestrict(), иначе игрок не сможет поднять предмет.
+        // Форвард отсюда не шлём - загрузка ещё не состоялась, её выполнит
+        // повторный вызов из SQL_Callback_CreateTables().
+        Clients[client].Authorized = true;
         return;
+    }
 
     char ip[16];
-    Clients[client].Account = GetSteamAccountID(client);
-    
+
     if(!Clients[client].Account || !GetClientIP(client, ip, sizeof(ip)))
         return;
 

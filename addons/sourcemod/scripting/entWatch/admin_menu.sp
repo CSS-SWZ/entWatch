@@ -1021,7 +1021,9 @@ bool AdminOnClientSayCommand(int client, const char[] args)
 		}
 		case 11:
 		{
-			Configs[cfg].Display = StringToInt(args);
+			// Display - битовая маска из трёх флагов; посторонние биты
+			// ни на что не влияют, но попадают в сохранённый конфиг.
+			Configs[cfg].Display = StringToInt(args) & (DISPLAY_CHAT | DISPLAY_USE | DISPLAY_HUD);
 		}
 		case 12:
 		{
