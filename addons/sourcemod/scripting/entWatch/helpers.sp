@@ -3,6 +3,15 @@ stock int UTIL_GetAccountIDFromSteamID(const char[] steamid)
 {
 	if (!strncmp(steamid, "STEAM_", 6))
 	{
+		// Формат STEAM_X:Y:Z. Без проверки длины индексы 8 и 10 читают за
+		// терминатором: обрезанный "STEAM_" давал id = -48, который проходил
+		// проверку "id != 0" и уходил в базу как чужой аккаунт.
+		if (strlen(steamid) < 11)
+			return 0;
+
+		if (steamid[8] != '0' && steamid[8] != '1')
+			return 0;
+
 		return StringToInt(steamid[10]) << 1 | (steamid[8] - 48);
 	}
 

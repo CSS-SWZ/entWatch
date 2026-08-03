@@ -422,10 +422,17 @@ bool ItemDrop(int item)
     if(Configs[Items[item].Config].Slot == SLOT_NONE || Configs[Items[item].Config].Slot == SLOT_KNIFE)
         return false;
 
-    SDKHooks_DropWeapon(Items[item].Owner, Items[item].Weapon, NULL_VECTOR, NULL_VECTOR);
+    int owner = Items[item].Owner;
+
+    SDKHooks_DropWeapon(owner, Items[item].Weapon, NULL_VECTOR, NULL_VECTOR);
 
     Items[item].Owner = 0;
     Items[item].Transfered = false;
+
+    // bypassHooks у SDKHooks_DropWeapon() по умолчанию true (sdkhooks.inc:452),
+    // поэтому OnWeaponDrop() здесь не сработает и форвард сторонним плагинам
+    // надо отправить самим - иначе смерть, выход и передача проходят мимо них.
+    APIOnClientItemDrop(owner, item);
 
     return true;
 }
