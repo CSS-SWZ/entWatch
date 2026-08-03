@@ -111,7 +111,13 @@ void ClientLostHandleAction(int client, int action)
     while((item = ItemFindClientItem(client, item)) != -1)
     {
         PrintToChatItemAction(item, action);
-        ItemDrop(item);
+
+        // Ножевой предмет на землю не падает, но владельца теряет всё равно:
+        // иначе труп остаётся владельцем и может использовать материю.
+        if(!ItemDrop(item))
+        {
+            ItemReleaseOwner(item);
+        }
     }
 }
 

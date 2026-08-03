@@ -162,15 +162,6 @@ void AssistUseOnPlayerRunCmdPost(int client, int buttons)
 		return;
 	}
 
-	// Движок сам не даёт трупу нажать кнопку: CBasePlayer::PlayerUse() уходит
-	// в ветку наблюдателя. AcceptEntityInput() эту защиту обходит, поэтому
-	// живость проверяем здесь.
-	if(!IsPlayerAlive(client))
-	{
-		prevButtons[client] = buttons;
-		return;
-	}
-
 	if(RestrictClientHasRestrict(client))
 	{
 		prevButtons[client] = buttons;

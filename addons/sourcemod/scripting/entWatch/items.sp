@@ -417,22 +417,32 @@ stock int ItemFindClientItem(int client, int startitem = -1)
     return -1;
 }
 
-bool ItemDrop(int item)
+// Снимает владельца с предмета. Отделено от ItemDrop() намеренно: "оружие нельзя
+// бросить на землю" (ножи, I5) и "владелец больше не владеет" - разные вещи.
+// У предмета не может быть мёртвого или вышедшего владельца.
+void ItemReleaseOwner(int item)
 {
-    if(Configs[Items[item].Config].Slot == SLOT_NONE || Configs[Items[item].Config].Slot == SLOT_KNIFE)
-        return false;
-
     int owner = Items[item].Owner;
 
-    SDKHooks_DropWeapon(owner, Items[item].Weapon, NULL_VECTOR, NULL_VECTOR);
+    if(owner == 0)
+        return;
 
     Items[item].Owner = 0;
     Items[item].Transfered = false;
 
     // bypassHooks у SDKHooks_DropWeapon() по умолчанию true (sdkhooks.inc:452),
-    // поэтому OnWeaponDrop() здесь не сработает и форвард сторонним плагинам
-    // надо отправить самим - иначе смерть, выход и передача проходят мимо них.
+    // поэтому OnWeaponDrop() на программном пути не срабатывает и форвард
+    // сторонним плагинам надо отправить самим.
     APIOnClientItemDrop(owner, item);
+}
+
+bool ItemDrop(int item)
+{
+    if(Configs[Items[item].Config].Slot == SLOT_NONE || Configs[Items[item].Config].Slot == SLOT_KNIFE)
+        return false;
+
+    SDKHooks_DropWeapon(Items[item].Owner, Items[item].Weapon, NULL_VECTOR, NULL_VECTOR);
+    ItemReleaseOwner(item);
 
     return true;
 }
