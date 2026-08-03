@@ -67,6 +67,11 @@ public Action OnButtonPress(int button, int activator, int caller, UseType type,
     if(RestrictClientHasRestrict(activator))
         return Plugin_Handled;
 
+    #if defined HALFZOMBIE
+    if(HalfZombie[activator])
+        return Plugin_Handled;
+    #endif
+
     if(!Items[item].Compare && !Items[item].Relay && !ItemIsReady(item))
         return Plugin_Handled;
 

@@ -356,6 +356,12 @@ stock int ItemsGetByName(const char[] name)
 stock int ItemsGetByShortName(const char[] name)
 {
     int len = strlen(name);
+
+    // Пустая строка не должна совпадать ни с чем: strncmp() с нулевой длиной
+    // возвращает 0 и вернул бы первый попавшийся предмет.
+    if(len == 0)
+        return -1;
+
     for(int i = 0; i < Items_Count; i++)
     {
         if(strncmp(Configs[Items[i].Config].ShortName, name, len, false) == 0)

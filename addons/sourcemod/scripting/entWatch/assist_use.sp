@@ -71,7 +71,12 @@ public Action Command_Use(int client, int args)
 	}
 		
 	item = ItemsGetByShortName(buffer[1]);
-	AssistUseAdmin(item, client);
+
+	if(item != -1)
+	{
+		AssistUseAdmin(item, client);
+	}
+
 	return Plugin_Handled;
 }
 
@@ -259,7 +264,9 @@ bool AssistUseIsValidTarget(int client)
 	if(StrContains(classname, "button", false) != -1)
 		return false;
 
-	if(!strncmp(classname, "prop_d", 6, false))
+	// Именно prop_door*: префикс покороче поймал бы ещё и prop_dynamic с
+	// prop_detail, а их нельзя открыть на E - подсказка глохла бы по всей карте.
+	if(!strncmp(classname, "prop_door", 9, false))
 	{
 		return false;
 	}

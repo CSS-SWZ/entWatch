@@ -246,6 +246,12 @@ stock int ConfigGetByName(const char[] name)
 stock int ConfigGetByShortName(const char[] name)
 {
     int len = strlen(name);
+
+    // Пустая строка не должна совпадать ни с чем: strncmp() с нулевой длиной
+    // возвращает 0 и вернул бы первый попавшийся конфиг.
+    if(len == 0)
+        return -1;
+
     for(int i = 0; i < Configs_Count; i++)
     {
         if(strncmp(Configs[i].ShortName, name, len, false) == 0)
