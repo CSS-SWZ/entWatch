@@ -7,6 +7,11 @@ static Handle TimerHud;
 static Handle CookieHud;
 static bool Hud[MAXPLAYERS + 1];
 
+// Состояние ротации страниц. Живёт на уровне файла, а не в статиках Timer_Hud(),
+// чтобы его можно было сбросить при смене карты.
+static int HudCurrentPages[3];
+static int HudTicksUpdate;
+
 void HudInit()
 {
 	CookieHud = RegClientCookie("entwatch_display", "", CookieAccess_Private);
@@ -31,6 +36,15 @@ void HudOnMapEnd()
 void HudCreateTimer()
 {
 	delete TimerHud;
+
+	// Номера страниц - состояние прошлой карты. Без сброса новая карта первые
+	// секунды показывает страницу, которой у неё ещё нет.
+	HudTicksUpdate = 0;
+
+	for(int i = 0; i < sizeof(HudCurrentPages); i++)
+	{
+		HudCurrentPages[i] = 0;
+	}
 
 	if(!Configs_Count)
 		return;
@@ -164,18 +178,17 @@ public Action Timer_Hud(Handle hTimer)
         HudBufferAddLine(buffer[0], pagesCount[0], line);
     }
 
-    static int currentPages[3];
-    static int ticksUpdatePages;
-
-    if(++ticksUpdatePages > TICKS_UPDATE_COUNT)
+    // Строгое сравнение: с ">" период получался TICKS_UPDATE_COUNT + 1 секунда,
+    // то есть константа означала не то, что написано в её имени.
+    if(++HudTicksUpdate >= TICKS_UPDATE_COUNT)
     {
 		for(int i = 0; i < 3; i++)
 		{
-		    if(++currentPages[i] > pagesCount[i])
-		        currentPages[i] = 0
+		    if(++HudCurrentPages[i] > pagesCount[i])
+		        HudCurrentPages[i] = 0;
 		}
-		
-		ticksUpdatePages = 0;
+
+		HudTicksUpdate = 0;
     }
 
     for (int i = 1; i <= MaxClients; i++)
@@ -188,12 +201,12 @@ public Action Timer_Hud(Handle hTimer)
 		if(team < 0)
 			team = 0;
 		
-		if(!buffer[team][currentPages[team]][0])
+		if(!buffer[team][HudCurrentPages[team]][0])
 			continue;
 		
 		Handle msg = StartMessageOne("KeyHintText", i);
 		BfWriteByte(msg, 1);
-		BfWriteString(msg, buffer[team][currentPages[team]]);
+		BfWriteString(msg, buffer[team][HudCurrentPages[team]]);
 		EndMessage();
     }
     return Plugin_Continue;

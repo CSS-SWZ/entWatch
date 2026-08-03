@@ -988,11 +988,28 @@ bool AdminOnClientSayCommand(int client, const char[] args)
 		}
 		case 7:
 		{
-			Configs[cfg].Mode = StringToInt(args);
+			// Тот же зажим, что и в парсерах конфига. Без него неизвестный
+			// режим проваливается в default у ItemIsReady(), и предмет
+			// становится вечно готовым.
+			int mode = StringToInt(args);
+
+			if(mode < MODE_PROTECT || mode > MODE_CHARGESCD)
+			{
+				mode = MODE_PROTECT;
+			}
+
+			Configs[cfg].Mode = mode;
 		}
 		case 8:
 		{
-			Configs[cfg].Slot = StringToInt(args);
+			int slot = StringToInt(args);
+
+			if(slot < SLOT_NONE || slot > SLOT_GRENADES)
+			{
+				slot = SLOT_DEFAULT;
+			}
+
+			Configs[cfg].Slot = slot;
 		}
 		case 9:
 		{

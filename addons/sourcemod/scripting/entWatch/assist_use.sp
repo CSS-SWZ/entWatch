@@ -85,6 +85,11 @@ stock bool AssistUseAdmin(int item, int admin)
 	if(!Items[item].Button || !Items[item].Owner)
 		return false;
 
+	// OnButtonPress откажет неготовому предмету, а сообщение "помог использовать"
+	// печаталось всё равно. Проверка повторяет ту, что стоит в самом хуке.
+	if(!Items[item].Compare && !Items[item].Relay && !ItemIsReady(item))
+		return false;
+
 	bool showUse = ConfigGetDisplay(Items[item].Config, DISPLAY_USE);
 
 	Configs[Items[item].Config].Display &= ~(DISPLAY_USE);
@@ -157,9 +162,21 @@ void AssistUseOnPlayerRunCmdPost(int client, int buttons)
 		return;
 	}
 
+	// Движок сам не даёт трупу нажать кнопку: CBasePlayer::PlayerUse() уходит
+	// в ветку наблюдателя. AcceptEntityInput() эту защиту обходит, поэтому
+	// живость проверяем здесь.
+	if(!IsPlayerAlive(client))
+	{
+		prevButtons[client] = buttons;
+		return;
+	}
+
 	if(RestrictClientHasRestrict(client))
-	    return;
-	
+	{
+		prevButtons[client] = buttons;
+		return;
+	}
+
 	float tick = GetTickInterval();
 	float time = GetGameTime();
 	float diffUseAssist = time - AssistUseTime[client];
