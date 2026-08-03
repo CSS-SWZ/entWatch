@@ -133,6 +133,14 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 
 stock int ClientGetByAccount(int account)
 {
+	// 0 - это "аккаунт неизвестен", а не ключ поиска. Иначе найдётся первый
+	// игрок, у которого Clients[].Account ещё не заполнен, и рестрикт по IP
+	// (у него pid = 0) применился бы к постороннему.
+	if(account == 0)
+	{
+		return 0;
+	}
+
 	for(int i = 1; i <= MaxClients; i++)
 	{
 		if(Clients[i].Account == account)
