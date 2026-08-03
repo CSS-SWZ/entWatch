@@ -1022,24 +1022,29 @@ bool AdminOnClientSayCommand(int client, const char[] args)
 
 void AdminConfigSave()
 {
-	char buffer[256];
-	BuildPath(Path_SM, buffer, sizeof(buffer), "configs/entwatch/empty.cfg");
-		
+	char map[64];
+	GetCurrentMap(map, sizeof(map));
+	StringToLowercase(map);
+
+	char path[PLATFORM_MAX_PATH];
+	BuildPath(Path_SM, path, sizeof(path), "configs/entwatch/%s.cfg", map);
+
 	KeyValues kv = new KeyValues("entities");
-		
-	if(!kv.ImportFromFile(buffer))
+
+	// Основой берём текущий конфиг карты, а не пустой шаблон: иначе корневые
+	// ключи (hud, assist_use) пропадут при первом же сохранении. Если файла
+	// ещё нет, пишем с нуля - ключи предметов создаёт сам JumpToKey().
+	if(FileExists(path) && !kv.ImportFromFile(path))
 	{
-		LogMessage("File %s not founded", buffer);
+		LogMessage("AdminConfigSave() : failed to read %s", path);
 		delete kv;
 		return;
 	}
 
 	AdminConfigBrowseItems(kv);
-		
-	GetCurrentMap(buffer, sizeof(buffer));
-	BuildPath(Path_SM, buffer, sizeof(buffer), "configs/entwatch/%s.cfg", buffer);
+
 	kv.Rewind();
-	kv.ExportToFile(buffer);
+	kv.ExportToFile(path);
 	delete kv;
 }
 
@@ -1056,7 +1061,7 @@ void AdminConfigBrowseItems(KeyValues kv)
 		kv.SetString("name", Configs[i].Name);
 		kv.SetString("color", Configs[i].Color[1]);
 		kv.SetNum("maxuses", Configs[i].Maxuses);
-		kv.SetNum("cooldown", RoundToNearest(Configs[i].Cooldown));
+		kv.SetFloat("cooldown", Configs[i].Cooldown);
 		kv.SetString("spawn", Configs[i].Template);
 		kv.SetNum("buttonid", Configs[i].Button_HammerId);
 		kv.SetNum("triggerid", Configs[i].Trigger_HammerId);
@@ -1077,11 +1082,18 @@ void AdminConfigBrowseItems(KeyValues kv)
 		
 				kv.SetNum("mode", Configs[i].Mode + 1);
 		
+				// Оба ключа пишем всегда. Читатель считает отсутствующий ключ
+				// единицей (config.sp), поэтому ножевой предмет вернулся бы
+				// после сохранения передаваемым - а ножи не передаются.
+				int transferable = 0;
+
 				if(Configs[i].Slot == SLOT_PRIMARY || Configs[i].Slot == SLOT_SECONDARY)
 				{
-					kv.SetNum("allowtransfer", 1);
-					kv.SetNum("forcedrop", 1);
+					transferable = 1;
 				}
+
+				kv.SetNum("allowtransfer", transferable);
+				kv.SetNum("forcedrop", transferable);
 			}
 			case CONFIG_TYPE_UNLOZE:
 			{

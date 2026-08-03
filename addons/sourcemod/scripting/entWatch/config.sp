@@ -177,7 +177,7 @@ void ConfigBrowseKeyUNLOZE(KeyValues kv)
     kv.GetString("short", c.ShortName, sizeof(c.ShortName));
 
     c.Color[0] = '#';
-    kv.GetString("color", c.Color[1], sizeof(c.Color) - 1);
+    kv.GetString("color", c.Color[1], sizeof(c.Color) - 1, Colors[COLOR_ITEM]);
 
     kv.GetString("filter", c.Filter, sizeof(c.Filter));
     
