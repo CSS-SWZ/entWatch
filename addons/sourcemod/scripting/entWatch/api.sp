@@ -78,9 +78,19 @@ public any Native_IsDatabaseLoaded(Handle plugin, int numParams)
     return DBLoaded;
 }
 
+// Индексы приходят из чужих плагинов, поэтому проверяем их здесь: без проверки
+// натив читает память за границами Clients[] / Configs[] / Items[] и молча
+// возвращает мусор вместо понятной ошибки в логе вызывающего.
 public any Native_IsClientLoaded(Handle plugin, int numParams)
 {
-    return Clients[GetNativeCell(1)].Authorized;
+    int client = GetNativeCell(1);
+
+    if(client < 1 || client > MaxClients)
+    {
+        return ThrowNativeError(SP_ERROR_NATIVE, "Invalid client index %i", client);
+    }
+
+    return Clients[client].Authorized;
 }
 
 public int Native_GetConfigsCount(Handle plugin, int numParams)
@@ -98,6 +108,11 @@ public any Native_GetConfig(Handle plugin, int numParams)
     int config = GetNativeCell(1);
     int size = GetNativeCell(3);
 
+    if (config < 0 || config >= Configs_Count)
+    {
+        return ThrowNativeError(SP_ERROR_NATIVE, "Invalid config index %i (loaded: %i)", config, Configs_Count);
+    }
+
     if (size != sizeof(Config))
     {
         ThrowNativeError(200, "Config does not match latest(got %i expected %i). Please update your includes and recompile your plugins", size, sizeof(Config));
@@ -112,6 +127,11 @@ public any Native_GetItem(Handle plugin, int numParams)
     int item = GetNativeCell(1);
     int size = GetNativeCell(3);
 
+    if (item < 0 || item >= Items_Count)
+    {
+        return ThrowNativeError(SP_ERROR_NATIVE, "Invalid item index %i (registered: %i)", item, Items_Count);
+    }
+
     if (size != sizeof(Item))
     {
         ThrowNativeError(200, "Item does not match latest(got %i expected %i). Please update your includes and recompile your plugins", size, sizeof(Item));
@@ -124,6 +144,13 @@ public any Native_GetItem(Handle plugin, int numParams)
 public int Native_ClientHasItem(Handle plugin, int numParams)
 {
     int client = GetNativeCell(1);
+
+    // Без проверки ItemFindClientItem(0) находит любой ничей предмет
+    // (Owner == 0 - это признак "нет владельца") и натив врёт "да".
+    if(client < 1 || client > MaxClients)
+    {
+        return ThrowNativeError(SP_ERROR_NATIVE, "Invalid client index %i", client);
+    }
 
     if(ItemFindClientItem(client) != -1)
         return 1;

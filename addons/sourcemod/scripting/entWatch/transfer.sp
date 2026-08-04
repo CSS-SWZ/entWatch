@@ -55,9 +55,31 @@ bool TransferIsValidItem(int item, int receiver = 0)
     return true;
 }
 
+// Получатель обязан пройти те же проверки, что и при обычном подборе предмета.
+// Сам подбор их делает в OnWeaponTouch (SDKHook_WeaponCanUse), но передача идёт
+// через EquipPlayerWeapon(), который этот хук не вызывает.
+bool TransferIsValidReceiver(int receiver)
+{
+    if(!IsPlayerAlive(receiver))
+        return false;
+
+    if(RestrictClientHasRestrict(receiver))
+        return false;
+
+    #if defined HALFZOMBIE
+    if(HalfZombie[receiver])
+        return false;
+    #endif
+
+    return true;
+}
+
 bool TransferItem(int item, int receiver, int admin)
 {
     if(!TransferIsValidItem(item, receiver))
+        return false;
+
+    if(!TransferIsValidReceiver(receiver))
         return false;
 
     int owner = Items[item].Owner;

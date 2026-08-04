@@ -61,7 +61,10 @@ bool ConfigLoad(const char[] path)
     KeyValues kv = new KeyValues("Config");
 
     if(!kv.ImportFromFile(path))
+    {
+        delete kv;
         return false;
+    }
 
     #if defined HUD
     HudConfigLoad(kv);
@@ -129,7 +132,7 @@ void ConfigBrowseKeyGFL(KeyValues kv)
     kv.GetString("shortname", c.ShortName, sizeof(c.ShortName));
 
     c.Color[0] = '#';
-    kv.GetString("color", c.Color[1], sizeof(c.Color), Colors[COLOR_ITEM]);
+    kv.GetString("color", c.Color[1], sizeof(c.Color) - 1, Colors[COLOR_ITEM]);
     ColorNameToColorCode(c.Color, sizeof(c.Color));
     
     kv.GetString("filtername", c.Filter, sizeof(c.Filter));
@@ -174,7 +177,7 @@ void ConfigBrowseKeyUNLOZE(KeyValues kv)
     kv.GetString("short", c.ShortName, sizeof(c.ShortName));
 
     c.Color[0] = '#';
-    kv.GetString("color", c.Color[1], sizeof(c.Color));
+    kv.GetString("color", c.Color[1], sizeof(c.Color) - 1, Colors[COLOR_ITEM]);
 
     kv.GetString("filter", c.Filter, sizeof(c.Filter));
     
@@ -246,6 +249,12 @@ stock int ConfigGetByName(const char[] name)
 stock int ConfigGetByShortName(const char[] name)
 {
     int len = strlen(name);
+
+    // Пустая строка не должна совпадать ни с чем: strncmp() с нулевой длиной
+    // возвращает 0 и вернул бы первый попавшийся конфиг.
+    if(len == 0)
+        return -1;
+
     for(int i = 0; i < Configs_Count; i++)
     {
         if(strncmp(Configs[i].ShortName, name, len, false) == 0)

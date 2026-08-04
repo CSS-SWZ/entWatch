@@ -17,6 +17,14 @@
 
 #define ASSIST_USE_CD    0.1
 
+// Дальность луча, которым ищем настоящую кнопку или дверь перед игроком.
+// Движок принимает +USE только ближе PLAYER_USE_RADIUS = 80 юнитов
+// (baseplayer_shared.h:15, CBasePlayer::FindUseEntity()), но точка глаз гуляет
+// от прыжка и приседа, а FindUseEntity() добирает цель боковыми hull-трейсами -
+// поэтому берём с запасом, а не впритык. Промах в меньшую сторону хуже промаха
+// в большую: не распознав настоящую кнопку, модуль нажмёт её вместе с материей.
+#define ASSIST_USE_DISTANCE    128.0
+
 bool AssistUse_Toggle;
 
 float PressButtonTime[MAXPLAYERS + 1];
@@ -71,13 +79,23 @@ public Action Command_Use(int client, int args)
 	}
 		
 	item = ItemsGetByShortName(buffer[1]);
-	AssistUseAdmin(item, client);
+
+	if(item != -1)
+	{
+		AssistUseAdmin(item, client);
+	}
+
 	return Plugin_Handled;
 }
 
 stock bool AssistUseAdmin(int item, int admin)
 {
 	if(!Items[item].Button || !Items[item].Owner)
+		return false;
+
+	// OnButtonPress откажет неготовому предмету, а сообщение "помог использовать"
+	// печаталось всё равно. Проверка повторяет ту, что стоит в самом хуке.
+	if(!Items[item].Compare && !Items[item].Relay && !ItemIsReady(item))
 		return false;
 
 	bool showUse = ConfigGetDisplay(Items[item].Config, DISPLAY_USE);
@@ -153,8 +171,11 @@ void AssistUseOnPlayerRunCmdPost(int client, int buttons)
 	}
 
 	if(RestrictClientHasRestrict(client))
-	    return;
-	
+	{
+		prevButtons[client] = buttons;
+		return;
+	}
+
 	float tick = GetTickInterval();
 	float time = GetGameTime();
 	float diffUseAssist = time - AssistUseTime[client];
@@ -245,11 +266,19 @@ void AssistUseOnClientDisconnect(int client)
 bool AssistUseIsValidTarget(int client)
 {
 	char classname[64];
-	float origin[3], angles[3];
+	float origin[3], angles[3], direction[3], endpoint[3];
 
 	GetClientEyePosition(client, origin); 
 	GetClientEyeAngles(client, angles);
-	TR_TraceRayFilter(origin, angles, MASK_SOLID, RayType_Infinite, TraceFilter);
+
+	// Луч ограничен по дальности. Бесконечный находил кнопку или дверь через всю
+	// карту и отменял помощь там, где игрок физически не мог их нажать: материя
+	// не срабатывала, стоило посмотреть в сторону дальней двери.
+	GetAngleVectors(angles, direction, NULL_VECTOR, NULL_VECTOR);
+	ScaleVector(direction, ASSIST_USE_DISTANCE);
+	AddVectors(origin, direction, endpoint);
+
+	TR_TraceRayFilter(origin, endpoint, MASK_SOLID, RayType_EndPoint, TraceFilter);
 
 	int target = TR_GetEntityIndex();
 
@@ -259,7 +288,9 @@ bool AssistUseIsValidTarget(int client)
 	if(StrContains(classname, "button", false) != -1)
 		return false;
 
-	if(!strncmp(classname, "prop_d", 6, false))
+	// Именно prop_door*: префикс покороче поймал бы ещё и prop_dynamic с
+	// prop_detail, а их нельзя открыть на E - подсказка глохла бы по всей карте.
+	if(!strncmp(classname, "prop_door", 9, false))
 	{
 		return false;
 	}

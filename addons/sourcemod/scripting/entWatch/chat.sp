@@ -128,37 +128,19 @@ stock void PrintToChatAll2(const char[] message, any ...)
 }
 
 
+// CS:S использует BitBuf-сообщения, ветка Protobuf была мёртвым кодом.
 void SendMessage(int client, char[] buffer, int iSize)
 {
-	static int mode = -1;
-	if(mode == -1)
-	{
-		mode = view_as<int>(GetUserMessageType() == UM_Protobuf);
-	}
 	SetGlobalTransTarget(client);
 	Format(buffer, iSize, "\x01\x07%s%t \x07%s%s", Colors[COLOR_TAG], "Tag", Colors[COLOR_OTHER], buffer);
 	ReplaceString(buffer, iSize, "{C}", "\x07");
 
-	
 	Handle hMessage = StartMessageOne("SayText2", client, USERMSG_RELIABLE|USERMSG_BLOCKHOOKS);
-	switch(mode)
-	{
-		case 0:
-		{
-			BfWrite bfWrite = UserMessageToBfWrite(hMessage);
-			bfWrite.WriteByte(client);
-			bfWrite.WriteByte(true);
-			bfWrite.WriteString(buffer);
-		}
-		case 1:
-		{
-			Protobuf protoBuf = UserMessageToProtobuf(hMessage);
-			protoBuf.SetInt("ent_idx", client);
-			protoBuf.SetBool("chat", true);
-			protoBuf.SetString("msg_name", buffer);
-			for(int k;k < 4;k++)	
-				protoBuf.AddString("params", "");
-		}
-	}
+
+	BfWrite bfWrite = UserMessageToBfWrite(hMessage);
+	bfWrite.WriteByte(client);
+	bfWrite.WriteByte(true);
+	bfWrite.WriteString(buffer);
+
 	EndMessage();
 }

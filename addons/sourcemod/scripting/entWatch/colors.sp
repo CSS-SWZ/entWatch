@@ -23,10 +23,13 @@ void ColorsInit()
 		SetFailState("Confilg file \"%s\" not founded.", buffer);
 	}
 	
-	hKeyValues.GetString("tagcolor", Colors[COLOR_TAG], 32);
-	hKeyValues.GetString("nickcolor", Colors[COLOR_NAME], 32);
-	hKeyValues.GetString("othercolor", Colors[COLOR_OTHER], 32);
-	hKeyValues.GetString("itemcolor", Colors[COLOR_ITEM], 32);
+	// Дефолты обязательны: без них отсутствующий ключ даёт пустую строку, и в чат
+	// уходит \x07 без шести hex-цифр - клиент съедает следующие шесть символов
+	// текста. itemcolor в поставляемом colors.cfg отсутствовал изначально.
+	hKeyValues.GetString("tagcolor", Colors[COLOR_TAG], 32, "FFFFFF");
+	hKeyValues.GetString("nickcolor", Colors[COLOR_NAME], 32, "FFFFFF");
+	hKeyValues.GetString("othercolor", Colors[COLOR_OTHER], 32, "FFFFFF");
+	hKeyValues.GetString("itemcolor", Colors[COLOR_ITEM], 32, "FFFFFF");
 	
 	delete hKeyValues;
 

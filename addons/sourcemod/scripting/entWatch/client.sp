@@ -40,12 +40,24 @@ public void OnClientPutInServer(int client)
 
 void ClientAuth(int client)
 {
-    if(DB == null)
+    Clients[client].Account = GetSteamAccountID(client);
+
+    // Гейт именно по DBLoaded, а не по "DB != null": на пути SQLite соединение
+    // готово сразу, а таблиц ещё нет - запрос из OnPluginStart уходил впустую,
+    // после чего SQL_Callback_CreateTables() авторизовал того же игрока второй
+    // раз, и entWatch_OnClientLoaded улетал дважды.
+    if(!DBLoaded)
+    {
+        // Базы нет - значит нет и рестриктов: тот же fail-open, что и в
+        // RestrictClientHasRestrict(), иначе игрок не сможет поднять предмет.
+        // Форвард отсюда не шлём - загрузка ещё не состоялась, её выполнит
+        // повторный вызов из SQL_Callback_CreateTables().
+        Clients[client].Authorized = true;
         return;
+    }
 
     char ip[16];
-    Clients[client].Account = GetSteamAccountID(client);
-    
+
     if(!Clients[client].Account || !GetClientIP(client, ip, sizeof(ip)))
         return;
 
@@ -54,23 +66,28 @@ void ClientAuth(int client)
 
 public void SQL_Callback_SelectBans(Database db, DBResultSet results, const char[] error, int userid)
 {
-    if(error[0])
-    {
-        LogError("SQL_Callback_SelectBans() : %s", error);
-    	return;
-    }
-
     int client = GetClientOfUserId(userid);
 
     if(client == 0)
         return;
 
-    if(results.FetchRow())
+    // Проверяем именно results: строка ошибки может остаться пустой при неудаче (dbi.inc:334-337).
+    if(results == null)
     {
-        RestrictCacheClientBan(client, results);
+        // Ответа от БД нет - значит и рестрикта нет. Тот же fail-open,
+        // что и в RestrictClientHasRestrict(), иначе игрок навсегда останется
+        // без права поднимать предметы (OnWeaponTouch).
+        LogError("SQL_Callback_SelectBans() : %s", error);
     }
+    else
+    {
+        if(results.FetchRow())
+        {
+            RestrictCacheClientBan(client, results);
+        }
 
-    RestrictLoadClientSummBans(client);
+        RestrictLoadClientSummBans(client);
+    }
 
     Clients[client].Authorized = true;
     APIOnClientLoaded(client);
@@ -106,7 +123,13 @@ void ClientLostHandleAction(int client, int action)
     while((item = ItemFindClientItem(client, item)) != -1)
     {
         PrintToChatItemAction(item, action);
-        ItemDrop(item);
+
+        // Ножевой предмет на землю не падает, но владельца теряет всё равно:
+        // иначе труп остаётся владельцем и может использовать материю.
+        if(!ItemDrop(item))
+        {
+            ItemReleaseOwner(item);
+        }
     }
 }
 
@@ -128,6 +151,14 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 
 stock int ClientGetByAccount(int account)
 {
+	// 0 - это "аккаунт неизвестен", а не ключ поиска. Иначе найдётся первый
+	// игрок, у которого Clients[].Account ещё не заполнен, и рестрикт по IP
+	// (у него pid = 0) применился бы к постороннему.
+	if(account == 0)
+	{
+		return 0;
+	}
+
 	for(int i = 1; i <= MaxClients; i++)
 	{
 		if(Clients[i].Account == account)
@@ -137,4 +168,16 @@ stock int ClientGetByAccount(int account)
 	}
 	
 	return 0;
+}
+
+// Возвращает userid игрока. Для серверной консоли (client == 0) возвращает 0:
+// GetClientUserId() на нулевом индексе - ошибка натива, а не 0.
+int ClientGetUserId(int client)
+{
+	if(client == 0)
+	{
+		return 0;
+	}
+
+	return GetClientUserId(client);
 }

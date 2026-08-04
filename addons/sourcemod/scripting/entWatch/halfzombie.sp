@@ -27,11 +27,12 @@ public void ZR_OnClientHumanPost(int client, bool respawn, bool protect)
     HalfZombieClientInit(client);
 }
 
-public Action ZR_OnClientInfect(int &client, int &attacker, bool &motherInfect, bool &respawnOverride, bool &respawn)
+// Пост-форвард, а не ZR_OnClientInfect: в pre-форварде класс игрока ещё
+// прежний, для mother-зомби ZR подменяет его уже после нас. Здесь класс
+// окончательный, и HalfZombie[] совпадает с тем, кем игрок стал на самом деле.
+public void ZR_OnClientInfected(int client, int attacker, bool motherInfect, bool respawnOverride, bool respawn)
 {
     HalfZombieDeterminateClient(client);
-
-    return Plugin_Continue;
 }
 #endif
 

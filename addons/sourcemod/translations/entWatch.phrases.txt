@@ -100,6 +100,11 @@
 		"ru"	"Ваши настройки не были загружены."
 		"en"	"Your settings were not loaded."
 	}
+	"Config editor is busy"
+	{
+		"ru"	"Редактор конфигов занят другим администратором."
+		"en"	"The config editor is busy with another admin."
+	}
 	"Incorrect usage"
 	{
 		"ru"	"Неверное использование"

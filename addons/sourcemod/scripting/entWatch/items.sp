@@ -16,7 +16,23 @@ bool RoundStarted;
 
 void ItemsOnMapStart()
 {
-    ItemsOnRoundStart();
+    // Поздней загрузке сканирование нужно: round_start для неё уже прошёл.
+    if(Late)
+    {
+        ItemsOnRoundStart();
+        return;
+    }
+
+    // На обычной смене карты сканировать нечего: round_start ещё не было, а
+    // сущности карты после него будут пересозданы. Раннее сканирование
+    // выставляло RoundStarted = true, после чего OnEntitySpawned вешал
+    // SDKHook_Use первый раз, а round_start - второй: ItemsClear() стирает
+    // учёт, но не снимает хуки, и одно нажатие считалось за два использования.
+    // Учёт прошлой карты при этом обязан уйти именно здесь: round_end перед
+    // сменой карты случается не всегда, а Items[].Config после ConfigOnMapStart()
+    // указывает уже в конфиги новой карты.
+    ItemsClear();
+    RoundStarted = false;
 }
 
 void ItemsOnRoundStart()
@@ -38,31 +54,11 @@ void ItemsOnRoundEnd()
 
 void ItemsOnPluginEnd()
 {
+    // У предмета может быть сразу и кнопка, и триггер, и compare, и relay,
+    // поэтому снимаем всё разом - ItemUnhook() проверяет каждое поле само.
     for(int i = 0; i < Items_Count; i++)
     {
-        if(Items[i].Button)
-        {
-            SDKUnhook(Items[i].Button, SDKHook_Use, OnButtonPress);
-            continue;
-        }
-        if(Items[i].Trigger)
-        {
-            SDKUnhook(Items[i].Trigger, SDKHook_StartTouch, OnTriggerTouch);
-            SDKUnhook(Items[i].Trigger, SDKHook_EndTouch, OnTriggerTouch);
-            SDKUnhook(Items[i].Trigger, SDKHook_Touch, OnTriggerTouch);
-            continue;
-        }
-        if(Items[i].Compare)
-        {
-            UnhookSingleEntityOutput(Items[i].Compare, "OnEqualTo", Compare_OnEqualTo);
-            continue;
-        }
-        if(Items[i].Relay)
-        {
-            UnhookSingleEntityOutput(Items[i].Relay, "OnTrigger", Relay_OnTrigger);
-            continue;
-        }
-
+        ItemUnhook(i);
     }
 }
 
@@ -242,11 +238,21 @@ void ItemProcessCheckButton(int item)
     if(Items[item].Button)
         return;
 
-    CreateTimer(0.5, Timer_ItemFindButton, item);
+    // В таймер уходит ссылка на оружие, а не индекс. За эти 0.5 с ItemRemove()
+    // сдвигает Items[], и сохранённый индекс начинает значить другой предмет:
+    // кнопка регистрировалась в чужой слот, а живой предмет оставался с
+    // Button == 0, то есть ItemsGetByButton() не находил его и OnButtonPress()
+    // пропускал нажатие вообще без проверки владельца.
+    CreateTimer(0.5, Timer_ItemFindButton, ItemGetRef(item), TIMER_FLAG_NO_MAPCHANGE);
 }
 
-public Action Timer_ItemFindButton(Handle timer, int item)
+public Action Timer_ItemFindButton(Handle timer, int ref)
 {
+    int item = ItemsGetByRef(ref);
+
+    if(item == -1)
+        return Plugin_Continue;
+
     if(!Items[item].Weapon || Items[item].Button || Items[item].Config == -1 || Configs[Items[item].Config].Mode == -1)
         return Plugin_Continue;
 
@@ -356,6 +362,12 @@ stock int ItemsGetByName(const char[] name)
 stock int ItemsGetByShortName(const char[] name)
 {
     int len = strlen(name);
+
+    // Пустая строка не должна совпадать ни с чем: strncmp() с нулевой длиной
+    // возвращает 0 и вернул бы первый попавшийся предмет.
+    if(len == 0)
+        return -1;
+
     for(int i = 0; i < Items_Count; i++)
     {
         if(strncmp(Configs[Items[i].Config].ShortName, name, len, false) == 0)
@@ -385,6 +397,25 @@ int ItemsGetByWeapon(int weapon)
     }
 
     return -1;
+}
+
+// Устойчивый ключ предмета для меню и прочего кода, живущего между кадрами:
+// индексы в Items[] сдвигаются при ItemRemove(), а ссылка на оружие - нет.
+int ItemGetRef(int item)
+{
+    return EntIndexToEntRef(Items[item].Weapon);
+}
+
+// Обратное преобразование. -1, если предмета больше нет: сущность оружия
+// удалена (ссылка протухла) либо предмет снят с учёта.
+int ItemsGetByRef(int ref)
+{
+    int weapon = EntRefToEntIndex(ref);
+
+    if(weapon == INVALID_ENT_REFERENCE)
+        return -1;
+
+    return ItemsGetByWeapon(weapon);
 }
 
 int ItemsGetByButton(int button)
@@ -431,15 +462,32 @@ stock int ItemFindClientItem(int client, int startitem = -1)
     return -1;
 }
 
+// Снимает владельца с предмета. Отделено от ItemDrop() намеренно: "оружие нельзя
+// бросить на землю" (ножи, I5) и "владелец больше не владеет" - разные вещи.
+// У предмета не может быть мёртвого или вышедшего владельца.
+void ItemReleaseOwner(int item)
+{
+    int owner = Items[item].Owner;
+
+    if(owner == 0)
+        return;
+
+    Items[item].Owner = 0;
+    Items[item].Transfered = false;
+
+    // bypassHooks у SDKHooks_DropWeapon() по умолчанию true (sdkhooks.inc:452),
+    // поэтому OnWeaponDrop() на программном пути не срабатывает и форвард
+    // сторонним плагинам надо отправить самим.
+    APIOnClientItemDrop(owner, item);
+}
+
 bool ItemDrop(int item)
 {
     if(Configs[Items[item].Config].Slot == SLOT_NONE || Configs[Items[item].Config].Slot == SLOT_KNIFE)
         return false;
 
     SDKHooks_DropWeapon(Items[item].Owner, Items[item].Weapon, NULL_VECTOR, NULL_VECTOR);
-
-    Items[item].Owner = 0;
-    Items[item].Transfered = false;
+    ItemReleaseOwner(item);
 
     return true;
 }
@@ -605,7 +653,7 @@ stock void ItemFormat(int item, char[] finalBuffer, int maxlength)
 
 void ItemRemove(int item)
 {
-    for(int i = item; i < Items_Count; i++)
+    for(int i = item; i < Items_Count - 1; i++)
     {
         Items[i] = Items[i + 1];
     }
