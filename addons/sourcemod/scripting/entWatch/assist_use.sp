@@ -17,6 +17,11 @@
 
 #define ASSIST_USE_CD    0.1
 
+// Дальность луча, которым ищем настоящую кнопку или дверь перед игроком.
+// Движок принимает +USE только ближе PLAYER_USE_RADIUS = 80 юнитов
+// (baseplayer_shared.h:15, CBasePlayer::FindUseEntity()); берём с запасом 20%.
+#define ASSIST_USE_DISTANCE    96.0
+
 bool AssistUse_Toggle;
 
 float PressButtonTime[MAXPLAYERS + 1];
@@ -258,11 +263,19 @@ void AssistUseOnClientDisconnect(int client)
 bool AssistUseIsValidTarget(int client)
 {
 	char classname[64];
-	float origin[3], angles[3];
+	float origin[3], angles[3], direction[3], endpoint[3];
 
 	GetClientEyePosition(client, origin); 
 	GetClientEyeAngles(client, angles);
-	TR_TraceRayFilter(origin, angles, MASK_SOLID, RayType_Infinite, TraceFilter);
+
+	// Луч ограничен по дальности. Бесконечный находил кнопку или дверь через всю
+	// карту и отменял помощь там, где игрок физически не мог их нажать: материя
+	// не срабатывала, стоило посмотреть в сторону дальней двери.
+	GetAngleVectors(angles, direction, NULL_VECTOR, NULL_VECTOR);
+	ScaleVector(direction, ASSIST_USE_DISTANCE);
+	AddVectors(origin, direction, endpoint);
+
+	TR_TraceRayFilter(origin, endpoint, MASK_SOLID, RayType_EndPoint, TraceFilter);
 
 	int target = TR_GetEntityIndex();
 

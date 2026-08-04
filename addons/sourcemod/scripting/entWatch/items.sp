@@ -16,7 +16,23 @@ bool RoundStarted;
 
 void ItemsOnMapStart()
 {
-    ItemsOnRoundStart();
+    // Поздней загрузке сканирование нужно: round_start для неё уже прошёл.
+    if(Late)
+    {
+        ItemsOnRoundStart();
+        return;
+    }
+
+    // На обычной смене карты сканировать нечего: round_start ещё не было, а
+    // сущности карты после него будут пересозданы. Раннее сканирование
+    // выставляло RoundStarted = true, после чего OnEntitySpawned вешал
+    // SDKHook_Use первый раз, а round_start - второй: ItemsClear() стирает
+    // учёт, но не снимает хуки, и одно нажатие считалось за два использования.
+    // Учёт прошлой карты при этом обязан уйти именно здесь: round_end перед
+    // сменой карты случается не всегда, а Items[].Config после ConfigOnMapStart()
+    // указывает уже в конфиги новой карты.
+    ItemsClear();
+    RoundStarted = false;
 }
 
 void ItemsOnRoundStart()
@@ -371,6 +387,25 @@ int ItemsGetByWeapon(int weapon)
     }
 
     return -1;
+}
+
+// Устойчивый ключ предмета для меню и прочего кода, живущего между кадрами:
+// индексы в Items[] сдвигаются при ItemRemove(), а ссылка на оружие - нет.
+int ItemGetRef(int item)
+{
+    return EntIndexToEntRef(Items[item].Weapon);
+}
+
+// Обратное преобразование. -1, если предмета больше нет: сущность оружия
+// удалена (ссылка протухла) либо предмет снят с учёта.
+int ItemsGetByRef(int ref)
+{
+    int weapon = EntRefToEntIndex(ref);
+
+    if(weapon == INVALID_ENT_REFERENCE)
+        return -1;
+
+    return ItemsGetByWeapon(weapon);
 }
 
 int ItemsGetByButton(int button)

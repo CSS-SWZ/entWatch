@@ -491,7 +491,7 @@ void TransferByMapMenu(int client, int receiver)
 		if(!TransferIsValidItem(i) || Items[i].Owner)
 			continue;
 
-		FormatEx(buffer[0], sizeof(buffer[]), "%i_%i", GetClientUserId(receiver), i);
+		FormatEx(buffer[0], sizeof(buffer[]), "%i_%i", GetClientUserId(receiver), ItemGetRef(i));
 		menu.AddItem(buffer[0], Configs[Items[i].Config].Name);
 		count++;
 
@@ -531,13 +531,21 @@ public int TransferByMapMenu_Handler(Menu menu, MenuAction action, int client, i
 			if(symbol == -1)
 				return 0;
 			
-			int item = StringToInt(buffer[symbol + 1]);
+			int item = ItemsGetByRef(StringToInt(buffer[symbol + 1]));
 			buffer[symbol] = 0;
 			int receiver = GetClientOfUserId(StringToInt(buffer));
 			
 			if(receiver == 0 || !IsClientInGame(receiver) || !IsPlayerAlive(receiver) || RestrictClientHasRestrict(receiver))
 			{
 				PrintToChat2(client, "\x07%s%t", Colors[COLOR_OTHER], "Client is unavailbale");
+				TransferMenu(client);
+				return 0;
+			}
+
+			// Предмета уже нет: карта убрала оружие, пока меню было открыто.
+			if(item == -1)
+			{
+				PrintToChat2(client, "\x07%s%t", Colors[COLOR_OTHER], "Item is unavailbale");
 				TransferMenu(client);
 				return 0;
 			}
@@ -581,7 +589,7 @@ void TransferByTargetMenu(int client, int receiver)
 				continue;
 				
 			Format(buffer, sizeof(buffer), "%N\n• %s", i, Configs[Items[item].Config].ShortName);
-			FormatEx(buffer2, sizeof(buffer2), "%i_%i_%i", GetClientUserId(receiver), GetClientUserId(i), item);
+			FormatEx(buffer2, sizeof(buffer2), "%i_%i_%i", GetClientUserId(receiver), GetClientUserId(i), ItemGetRef(item));
 			menu.AddItem(buffer2, buffer);
 			count++;
 		}
@@ -622,7 +630,15 @@ public int TransferByTargetMenu_Handler(Menu menu, MenuAction action, int client
 			if(symbol == -1)
 				return 0;
 			
-			int item = StringToInt(buffer[symbol + 1]);
+			int item = ItemsGetByRef(StringToInt(buffer[symbol + 1]));
+
+			// Предмета уже нет: карта убрала оружие, пока меню было открыто.
+			if(item == -1)
+			{
+				PrintToChat2(client, "%t", "Item is unavailbale");
+				TransferMenu(client);
+				return 0;
+			}
 
 			buffer[symbol] = 0;
 			
@@ -674,7 +690,7 @@ void UseItemsMenu(int client)
 		{
 			if(Items[item].Button)
 			{
-				FormatEx(buffer[0], sizeof(buffer[]), "%i_%i", GetClientUserId(i), item);
+				FormatEx(buffer[0], sizeof(buffer[]), "%i_%i", GetClientUserId(i), ItemGetRef(item));
 				FormatEx(buffer[1], sizeof(buffer[]), "%N\n-> %s", i, Configs[Items[item].Config].Name);
 				menu.AddItem(buffer[0], buffer[1]);
 				count++;
@@ -716,9 +732,10 @@ public int UseItemMenu_Handler(Menu menu, MenuAction action, int client, int ind
 			if(symbol == -1)
 				return 0;
 			
-			int item = StringToInt(buffer[symbol + 1]);
+			int item = ItemsGetByRef(StringToInt(buffer[symbol + 1]));
 
-			if(!Items[item].Button)
+			// Предмета уже нет: карта убрала оружие, пока меню было открыто.
+			if(item == -1 || !Items[item].Button)
 				return 0;
 
 			buffer[symbol] = 0;
@@ -738,8 +755,6 @@ public int UseItemMenu_Handler(Menu menu, MenuAction action, int client, int ind
 	return 0;
 }
 #endif
-
-bool EditedConfigs[MAX_CONFIGS];
 
 enum struct EditClientConfig
 {
@@ -766,6 +781,23 @@ enum struct EditClientConfig
 }
 
 EditClientConfig EditClientsConfigs[MAXPLAYERS + 1];
+
+// Редактор конфигов один на сервер. Два админа, правящие Configs[] одновременно,
+// затирают правки друг друга, а удаление конфига сдвигает массив под чужим
+// сохранённым индексом. Отдельного флага не держим: занятость выводится из
+// состояния самих редакторов и потому не может с ним разойтись.
+int AdminConfigEditorGet()
+{
+	for(int i = 1; i <= MaxClients; i++)
+	{
+		if(EditClientsConfigs[i].IsEdit())
+		{
+			return i;
+		}
+	}
+
+	return 0;
+}
 
 void ConfigsMenu(int client)
 {
@@ -810,6 +842,13 @@ public int ConfigsMenu_Handler(Menu menu, MenuAction action, int client, int ind
 		}
 		case MenuAction_Select:
 		{
+			if(AdminConfigEditorGet() != 0)
+			{
+				PrintToChat2(client, "\x07%s%t", Colors[COLOR_OTHER], "Config editor is busy");
+				AdminMenu(client);
+				return 0;
+			}
+
 			char buffer[32];
 			menu.GetItem(index, buffer, sizeof(buffer));
 			
@@ -831,13 +870,7 @@ public int ConfigsMenu_Handler(Menu menu, MenuAction action, int client, int ind
 			}
 			else
 			{
-				int config = StringToInt(buffer);
-				if(EditedConfigs[config])
-				{
-					AdminMenu(client);
-					return 0;
-				}
-				EditClientsConfigs[client].Init(config);
+				EditClientsConfigs[client].Init(StringToInt(buffer));
 				ConfigMenu(client);
 			}
 		}
@@ -851,11 +884,6 @@ void ConfigMenu(int client)
 	int slot = EditClientsConfigs[client].Slot;
 	int cfg = EditClientsConfigs[client].Config;
 	int startIndex = EditClientsConfigs[client].StartIndex;
-
-	if(!EditedConfigs[cfg])
-	{
-		EditedConfigs[cfg] = true;
-	}
 
 	SetGlobalTransTarget(client);
 
@@ -894,7 +922,6 @@ public int ConfigMenu_Handler(Menu menu, MenuAction action, int client, int inde
 		}
 		case MenuAction_Cancel:
 		{
-			EditedConfigs[EditClientsConfigs[client].Config] = false;
 			EditClientsConfigs[client].Clear();
 
 			if(index == MenuCancel_ExitBack)
@@ -915,7 +942,6 @@ public int ConfigMenu_Handler(Menu menu, MenuAction action, int client, int inde
 					// Состояние редактора нужно сбросить до удаления: RemoveConfig()
 					// сдвигает Configs[], и сохранённый индекс начнёт указывать
 					// на соседний конфиг - следующая реплика админа ушла бы в него.
-					EditedConfigs[config] = false;
 					EditClientsConfigs[client].Clear();
 
 					RemoveConfig(config);
