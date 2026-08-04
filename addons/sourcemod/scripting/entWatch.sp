@@ -40,7 +40,7 @@ public Plugin myinfo =
     name = "entWatch",
     author = "hEl",
     description = "Provides useful features with map items",
-    version = "1.0.2",
+    version = "1.0.3",
     url = "https://github.com/CSS-SWZ/entWatch"
 };
 

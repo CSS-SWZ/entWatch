@@ -384,12 +384,15 @@ void RestrictClientUnBan(int client, int admin)
     GetClientName(admin, names[0], sizeof(names[]));
     GetClientName(client, names[1], sizeof(names[]));
 
+    // В пакет кладём ключ самого рестрикта, а не userid цели: снимать его из
+    // памяти придётся у всех, кого затронет DELETE, а не только у неё.
     DataPack pack = new DataPack();
-    pack.WriteCell(GetClientUserId(client));
+    pack.WriteCell(Clients[client].Account);
     pack.WriteCell(admin);
     pack.WriteCell(ClientGetUserId(admin));
     pack.WriteString(names[0]);
     pack.WriteString(names[1]);
+    pack.WriteString(ip);
 
     DB_Query(SQL_Callback_UnBan, pack, DBPrio_Normal, DELETE_BAN, GetTime(), Clients[client].Account, ip);
 }
@@ -399,11 +402,13 @@ public void SQL_Callback_UnBan(Database db, DBResultSet results, const char[] er
 	pack.Reset();
 
 	char names[2][64];
-	int client = GetClientOfUserId(pack.ReadCell());
+	char ip[16];
+	int account = pack.ReadCell();
 	int console = pack.ReadCell();
 	int admin = GetClientOfUserId(pack.ReadCell());
 	pack.ReadString(names[0], sizeof(names[]));
 	pack.ReadString(names[1], sizeof(names[]));
+	pack.ReadString(ip, sizeof(ip));
 	delete pack;
 	if(error[0])
 	{
@@ -417,15 +422,46 @@ public void SQL_Callback_UnBan(Database db, DBResultSet results, const char[] er
 		return;
 	}
 	
-	if(client != 0 && IsClientInGame(client))
-	{
-		Restricts[client].Admin = 0;
-		Restricts[client].Duration = 0;
-		Restricts[client].Expires = 0;
-	}
+	RestrictClearCacheByBanKey(account, ip);
+
 	PrintToChatAll2("%t", "Unban success", names[0], names[1]);
 	LogMessage("Unban success (Admin: %s, Target: %s)", names[0], names[1]);
 	LastQueryEBanNotCompleted = false;
+}
+
+// Снимает рестрикт из памяти у всех, кого затронул DELETE. Запрос удаляет строки
+// по "pid = аккаунт ИЛИ pip = адрес", то есть освобождает и соседей по общему IP
+// (за одним NAT сидят несколько игроков, и строка бана по IP относится ко всем).
+// Кэш чистился только цели: сосед оставался ограничен в памяти при уже удалённой
+// строке - молча, без сообщения и до самой смены карты.
+void RestrictClearCacheByBanKey(int account, const char[] ip)
+{
+	char clientIP[16];
+
+	for(int i = 1; i <= MaxClients; i++)
+	{
+		if(!IsClientInGame(i) || IsFakeClient(i))
+			continue;
+
+		if(!RestrictClientHasRestrict(i))
+			continue;
+
+		// account == 0 не ключ, а "аккаунт неизвестен": по нему нашлись бы все
+		// неавторизованные игроки разом. Тот же принцип, что в ClientGetByAccount().
+		bool affected = (account != 0 && Clients[i].Account == account);
+
+		if(!affected && GetClientIP(i, clientIP, sizeof(clientIP)))
+		{
+			affected = !strcmp(clientIP, ip);
+		}
+
+		if(!affected)
+			continue;
+
+		Restricts[i].Admin = 0;
+		Restricts[i].Duration = 0;
+		Restricts[i].Expires = 0;
+	}
 }
 
 // Минимальная проверка IPv4: только цифры и ровно три точки. Прежняя проверка

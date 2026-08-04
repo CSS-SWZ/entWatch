@@ -238,11 +238,21 @@ void ItemProcessCheckButton(int item)
     if(Items[item].Button)
         return;
 
-    CreateTimer(0.5, Timer_ItemFindButton, item, TIMER_FLAG_NO_MAPCHANGE);
+    // В таймер уходит ссылка на оружие, а не индекс. За эти 0.5 с ItemRemove()
+    // сдвигает Items[], и сохранённый индекс начинает значить другой предмет:
+    // кнопка регистрировалась в чужой слот, а живой предмет оставался с
+    // Button == 0, то есть ItemsGetByButton() не находил его и OnButtonPress()
+    // пропускал нажатие вообще без проверки владельца.
+    CreateTimer(0.5, Timer_ItemFindButton, ItemGetRef(item), TIMER_FLAG_NO_MAPCHANGE);
 }
 
-public Action Timer_ItemFindButton(Handle timer, int item)
+public Action Timer_ItemFindButton(Handle timer, int ref)
 {
+    int item = ItemsGetByRef(ref);
+
+    if(item == -1)
+        return Plugin_Continue;
+
     if(!Items[item].Weapon || Items[item].Button || Items[item].Config == -1 || Configs[Items[item].Config].Mode == -1)
         return Plugin_Continue;
 

@@ -96,12 +96,25 @@ public int AdminMenu_Handler(Menu menu, MenuAction action, int client, int index
 				}
 				case 'r':
 				{
+					// RoundStarted нужно вернуть в то состояние, в котором была
+					// перезагрузка. OnMapStart() под Late уходит в полное
+					// сканирование и выставляет его в true; если админ нажал
+					// Reload между раундами, подсистема остаётся вооружённой,
+					// сущности следующего раунда регистрируются здесь (хук №1),
+					// а round_start вешает второй - ItemsClear() снимает учёт,
+					// но не хуки. Весь следующий раунд одно нажатие считалось
+					// бы за два.
+					bool roundStarted = RoundStarted;
+
 					Late = true;
 					OnPluginEnd();
 					OnRoundEnd(null, "", false);
 					OnMapStart();
-					AdminMenu(client);
 					Late = false;
+
+					RoundStarted = roundStarted;
+
+					AdminMenu(client);
 				}
 			}
 		}
