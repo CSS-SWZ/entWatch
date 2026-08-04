@@ -19,8 +19,11 @@
 
 // Дальность луча, которым ищем настоящую кнопку или дверь перед игроком.
 // Движок принимает +USE только ближе PLAYER_USE_RADIUS = 80 юнитов
-// (baseplayer_shared.h:15, CBasePlayer::FindUseEntity()); берём с запасом 20%.
-#define ASSIST_USE_DISTANCE    96.0
+// (baseplayer_shared.h:15, CBasePlayer::FindUseEntity()), но точка глаз гуляет
+// от прыжка и приседа, а FindUseEntity() добирает цель боковыми hull-трейсами -
+// поэтому берём с запасом, а не впритык. Промах в меньшую сторону хуже промаха
+// в большую: не распознав настоящую кнопку, модуль нажмёт её вместе с материей.
+#define ASSIST_USE_DISTANCE    128.0
 
 bool AssistUse_Toggle;
 
