@@ -45,7 +45,7 @@ Restrict Restricts[MAXPLAYERS + 1];
 // нечем. Ключ - аккаунт, а не слот, так что перезаход игрока рестрикт не снимает.
 // Сам список читается только при подключении, выдаче и снятии; горячий путь
 // смотрит в Restricts[].Temporary.
-#define MAX_TEMP_RESTRICTS 64
+#define MAX_TEMP_RESTRICTS 100
 
 int TempRestricts[MAX_TEMP_RESTRICTS];
 int TempRestricts_Count;
@@ -120,7 +120,7 @@ public Action Command_Status(int client, int args)
 
 public Action Command_Ban(int client, int args)
 {
-	if(args != 1 && args != 2)
+	if(args < 1)
 	{
 		ReplyToCommand(client, "%t %t!\nSyntax: sm_eban <#name|#userid> [minutes]", "Tag", "Incorrect usage");
 	}
