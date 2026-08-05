@@ -21,6 +21,11 @@ enum struct Restrict
     int Duration;
     int Expires;
 
+    // Кэш членства в TempRestricts[]. Не источник истины, а производная от него:
+    // прочёсывать список на каждый вызов RestrictClientHasRestrict() нельзя, её
+    // зовут с SDKHook_Touch, то есть каждый тик на каждого игрока в триггере.
+    bool Temporary;
+
     void Clear()
     {
         this.Count = 0;
@@ -28,10 +33,22 @@ enum struct Restrict
         this.Admin = 0;
         this.Duration = 0;
         this.Expires = 0;
+        this.Temporary = false;
     }
 }
 
 Restrict Restricts[MAXPLAYERS + 1];
+
+// Временные рестрикты - до ближайшей смены карты. Живут только в памяти и в базу
+// не попадают, поэтому работают и тогда, когда база недоступна: обычные рестрикты
+// в этом случае выключены целиком (fail-open), и восстановить порядок было бы
+// нечем. Ключ - аккаунт, а не слот, так что перезаход игрока рестрикт не снимает.
+// Сам список читается только при подключении, выдаче и снятии; горячий путь
+// смотрит в Restricts[].Temporary.
+#define MAX_TEMP_RESTRICTS 100
+
+int TempRestricts[MAX_TEMP_RESTRICTS];
+int TempRestricts_Count;
 
 void RestrictInit()
 {
@@ -73,8 +90,19 @@ public Action Command_Status(int client, int args)
 		{
 			char buffer2[256];
 			SetGlobalTransTarget(client);
-			int duration = Restricts[target].Expires != -1 ? ((Restricts[target].Expires - GetTime()) / 60):-1;
-			RestrictFormatDuration(buffer2, 256, duration, true);
+
+			// У временного рестрикта нет ни срока, ни строки в базе, поэтому
+			// длительность для него пишется отдельно.
+			if(Restricts[target].Temporary)
+			{
+				FormatEx(buffer2, sizeof(buffer2), "%t", "Temporary");
+			}
+			else
+			{
+				int duration = Restricts[target].Expires != -1 ? ((Restricts[target].Expires - GetTime()) / 60):-1;
+				RestrictFormatDuration(buffer2, sizeof(buffer2), duration, true);
+			}
+
 			PrintToChat2(client, "%t%s", "You have restrict", buffer2, buffer);
 		}
 		else
@@ -92,21 +120,29 @@ public Action Command_Status(int client, int args)
 
 public Action Command_Ban(int client, int args)
 {
-	if(args != 2)
+	if(args < 1)
 	{
-		ReplyToCommand(client, "%t %t!\nSyntax: sm_eban <#name|#userid> <minutes>", "Tag", "Incorrect usage");
+		ReplyToCommand(client, "%t %t!\nSyntax: sm_eban <#name|#userid> [minutes]", "Tag", "Incorrect usage");
 	}
 	else
 	{
 		char buffer[64];
 		GetCmdArg(1, buffer, sizeof(buffer));
-		
+
 		int target = FindTarget(client, buffer, true, true);
-		
+
 		if(target > 0)
 		{
-			GetCmdArg(2, buffer, sizeof(buffer));
-			RestrictClientBan(target, client, StringToInt(buffer));
+			// Без второго аргумента - временный рестрикт, до смены карты.
+			if(args == 1)
+			{
+				RestrictClientTempBan(target, client);
+			}
+			else
+			{
+				GetCmdArg(2, buffer, sizeof(buffer));
+				RestrictClientBan(target, client, StringToInt(buffer));
+			}
 		}
 	}
 	
@@ -299,6 +335,42 @@ void RestrictClientBan(int client, int admin, int duration)
              duration * 60, expires);
 }
 
+// Временный рестрикт, до ближайшей смены карты. Гейта по базе здесь нет
+// намеренно: этот рестрикт для того и заведён, чтобы оставаться рабочим, когда
+// базы нет. По той же причине он не занимает LastQueryEBanNotCompleted -
+// запросов не будет.
+void RestrictClientTempBan(int client, int admin)
+{
+    // 0 в этом коде значит "аккаунт неизвестен", а не ключ поиска: попади он в
+    // список, под рестрикт разом попали бы все игроки без аккаунта.
+    if(!Clients[client].Account)
+    {
+    	PrintToChat2(admin, "%t", "Player is not loaded");
+    	return;
+    }
+    if(RestrictClientHasRestrict(client))
+    {
+    	PrintToChat2(admin, "%t", "Player is restricted");
+    	return;
+    }
+    if(!RestrictAddTempRestrict(Clients[client].Account))
+    {
+    	PrintToChat2(admin, "%t", "Temp restrict list is full");
+    	LogError("RestrictClientTempBan() : temp restrict list is full (%i entries)", MAX_TEMP_RESTRICTS);
+    	return;
+    }
+
+    Restricts[client].Temporary = true;
+
+    char names[2][64];
+
+    GetClientName(admin, names[0], sizeof(names[]));
+    GetClientName(client, names[1], sizeof(names[]));
+
+    PrintToChatAll2("%t", "Temp ban success", names[0], names[1]);
+    LogMessage("Temp ban success (Admin: %s, Target: %s)", names[0], names[1]);
+}
+
 public void SQL_Callback_BanClient(Database db, DBResultSet results, const char[] error, DataPack pack)
 {
     pack.Reset();
@@ -351,6 +423,34 @@ public void SQL_Callback_BanClient(Database db, DBResultSet results, const char[
 
 void RestrictClientUnBan(int client, int admin)
 {
+    // Временный рестрикт снимается здесь и на этом команда заканчивается: в базу
+    // за ним идти незачем, иначе при недоступной базе снять его было бы нечем.
+    // Прав на него не спрашиваем - выдавший админ нигде не записан. Если у игрока
+    // есть ещё и рестрикт из базы, админ вводит команду второй раз.
+    if(Restricts[client].Temporary)
+    {
+    	RestrictRemoveTempRestrict(Clients[client].Account);
+    	Restricts[client].Temporary = false;
+
+    	char names[2][64];
+
+    	GetClientName(admin, names[0], sizeof(names[]));
+    	GetClientName(client, names[1], sizeof(names[]));
+
+    	PrintToChatAll2("%t", "Temp unban success", names[0], names[1]);
+    	LogMessage("Temp unban success (Admin: %s, Target: %s)", names[0], names[1]);
+
+    	// Оба рестрикта разом sm_eban выдать не даёт, но sm_addeban выдаёт: он
+    	// смотрит только в базу. Тогда игрок остаётся ограничен, и объявить
+    	// "рестрикт снят" было бы неправдой - говорим админу повторить команду.
+    	if(RestrictClientHasDatabaseRestrict(client))
+    	{
+    	    PrintToChat2(admin, "%t", "Database restrict remains");
+    	}
+
+    	return;
+    }
+
     if(DB == null)
     {
     	PrintToChat2(admin, "%t", "DataBase is not loaded");
@@ -377,6 +477,7 @@ void RestrictClientUnBan(int client, int admin)
     	return;
     }
     LastQueryEBanNotCompleted = true;
+
     char ip[16];
     char names[2][64];
 
@@ -842,7 +943,87 @@ public void SQL_Callback_DeleteBanClient(Database db, DBResultSet results, const
 
 bool RestrictClientHasRestrict(int client)
 {
+	// Временный рестрикт проверяется до гейта по базе намеренно: он от неё не
+	// зависит и обязан работать, когда её нет.
+	if(Restricts[client].Temporary)
+		return true;
+
+	return RestrictClientHasDatabaseRestrict(client);
+}
+
+// Рестрикт из базы, без учёта временного. Нужен там, где эти два вида надо
+// различать: у одного есть строка в базе и выдавший его админ, у другого нет
+// ни того, ни другого.
+bool RestrictClientHasDatabaseRestrict(int client)
+{
 	return (DBLoaded && (Restricts[client].Expires == -1 || Restricts[client].Expires > GetTime()));
+}
+
+// Пересевает кэш из списка. Зовётся из ClientAuth, как только становится известен
+// аккаунт: это единственный момент, когда игрок мог получить временный рестрикт
+// до своего подключения - выдали, он вышел и вернулся.
+void RestrictClientInitTemp(int client)
+{
+	Restricts[client].Temporary = RestrictHasTempRestrict(Clients[client].Account);
+}
+
+// Сброс привязан к концу карты, а не к началу, намеренно. Кнопка Reload в
+// sm_eadmin вызывает OnMapStart() руками, чтобы перечитать конфиги предметов, и
+// на старте здесь она стирала бы заодно все временные рестрикты - молча, посреди
+// карты. OnMapEnd она не вызывает, а настоящая смена карты вызывает всегда.
+void RestrictOnMapEnd()
+{
+	TempRestricts_Count = 0;
+
+	// Список опустел - опустошаем и кэш. На смене карты OnClientDisconnect
+	// приходит на всех, и Clear() сбросил бы флаги сам, но полагаться на порядок
+	// этих двух событий не нужно: здесь дешевле пройти по слотам явно.
+	for(int i = 1; i <= MaxClients; i++)
+	{
+		Restricts[i].Temporary = false;
+	}
+}
+
+int RestrictFindTempRestrict(int account)
+{
+	for(int i = 0; i < TempRestricts_Count; i++)
+	{
+		if(TempRestricts[i] == account)
+			return i;
+	}
+
+	return -1;
+}
+
+bool RestrictHasTempRestrict(int account)
+{
+	return (RestrictFindTempRestrict(account) != -1);
+}
+
+// false - список переполнен. Молча терять рестрикт нельзя, поэтому решение
+// принимает вызывающий: он и сообщает админу, и пишет в лог.
+bool RestrictAddTempRestrict(int account)
+{
+	if(TempRestricts_Count >= MAX_TEMP_RESTRICTS)
+		return false;
+
+	TempRestricts[TempRestricts_Count] = account;
+	TempRestricts_Count++;
+
+	return true;
+}
+
+void RestrictRemoveTempRestrict(int account)
+{
+	int index = RestrictFindTempRestrict(account);
+
+	if(index == -1)
+		return;
+
+	// Порядок в списке не значим, поэтому дырку затыкаем последним элементом,
+	// а не сдвигаем хвост.
+	TempRestricts_Count--;
+	TempRestricts[index] = TempRestricts[TempRestricts_Count];
 }
 
 bool RestrictIsValidDuration(int duration)

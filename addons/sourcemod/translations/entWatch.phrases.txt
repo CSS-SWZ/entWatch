@@ -190,6 +190,33 @@
 		"ru"		"Навсегда"
 		"en"		"Permanently"
 	}
+	"Temporary"
+	{
+		"ru"		"Временный"
+		"en"		"Temporary"
+	}
+	"Temp ban success"
+	{
+		"#format"	"{1:s},{2:s}"
+		"ru"		"{1} выдал временный рестрикт {2}"
+		"en"		"{1} gave a temporary restriction to {2}"
+	}
+	"Temp restrict list is full"
+	{
+		"ru"		"Список временных рестриктов переполнен."
+		"en"		"The temporary restriction list is full."
+	}
+	"Temp unban success"
+	{
+		"#format"	"{1:s},{2:s}"
+		"ru"		"{1} снял временный рестрикт с {2}"
+		"en"		"{1} removed the temporary restriction from {2}"
+	}
+	"Database restrict remains"
+	{
+		"ru"		"У игрока остался рестрикт из базы. Повторите команду, чтобы снять и его."
+		"en"		"The player still has a database restriction. Repeat the command to remove it too."
+	}
 	"You have restrict"
 	{
 		"#format"	"{1:s}"
