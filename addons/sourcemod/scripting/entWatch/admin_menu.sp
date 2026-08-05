@@ -200,7 +200,7 @@ void BanLengthMenu(int client, int target)
 
 	IntToString(GetClientUserId(target), buffer2, sizeof(buffer2));
 	
-	for(int i; i < 6; i++)
+	for(int i; i < 7; i++)
 	{
 		if(i < 5)
 		{
@@ -209,9 +209,13 @@ void BanLengthMenu(int client, int target)
 																i == 2 ?	1440:
 																i == 3 ?	10080:40320);
 		}
-		else
+		else if(i == 5)
 		{
 			FormatEx(buffer, sizeof(buffer), "%t", "Permanently");
+		}
+		else
+		{
+			FormatEx(buffer, sizeof(buffer), "%t", "Until map change");
 		}
 		menu.AddItem(buffer2, buffer);
 	}
@@ -247,11 +251,18 @@ public int BanLengthMenu_Handler(Menu menu, MenuAction action, int client, int i
 				return 0;
 			}
 
-			RestrictClientBan(target, client,	index == 0 ?	10:
-												index == 1 ?	60:
-												index == 2 ?	1440:
-												index == 3 ?	10080:
-												index == 4 ?	40320:-1);
+			if(index == 6)
+			{
+				RestrictClientMapBan(target, client);
+			}
+			else
+			{
+				RestrictClientBan(target, client,	index == 0 ?	10:
+													index == 1 ?	60:
+													index == 2 ?	1440:
+													index == 3 ?	10080:
+													index == 4 ?	40320:-1);
+			}
 
 			AdminMenu(client);
 		}

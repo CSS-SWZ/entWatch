@@ -190,6 +190,22 @@
 		"ru"		"Навсегда"
 		"en"		"Permanently"
 	}
+	"Until map change"
+	{
+		"ru"		"До конца карты"
+		"en"		"Until map change"
+	}
+	"Map ban success"
+	{
+		"#format"	"{1:s},{2:s}"
+		"ru"		"{1} выдал рестрикт {2} до конца карты"
+		"en"		"{1} gave a restriction to {2} until the map changes"
+	}
+	"Map restrict list is full"
+	{
+		"ru"		"Список рестриктов до конца карты переполнен."
+		"en"		"The list of until-map-change restrictions is full."
+	}
 	"You have restrict"
 	{
 		"#format"	"{1:s}"

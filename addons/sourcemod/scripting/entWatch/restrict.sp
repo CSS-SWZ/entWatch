@@ -33,6 +33,16 @@ enum struct Restrict
 
 Restrict Restricts[MAXPLAYERS + 1];
 
+// Рестрикты до конца карты. Живут только в памяти и в базу не попадают, поэтому
+// работают и тогда, когда база недоступна - обычные рестрикты в этом случае
+// выключены целиком (fail-open, RestrictClientHasRestrict), и восстановить
+// порядок было бы нечем. Ключ - аккаунт, а не слот, так что перезаход игрока
+// рестрикт не снимает.
+#define MAX_MAP_RESTRICTS 64
+
+int MapRestricts[MAX_MAP_RESTRICTS];
+int MapRestricts_Count;
+
 void RestrictInit()
 {
     RegConsoleCmd("sm_status", Command_Status);
@@ -73,8 +83,19 @@ public Action Command_Status(int client, int args)
 		{
 			char buffer2[256];
 			SetGlobalTransTarget(client);
-			int duration = Restricts[target].Expires != -1 ? ((Restricts[target].Expires - GetTime()) / 60):-1;
-			RestrictFormatDuration(buffer2, 256, duration, true);
+
+			// Рестрикт карты в Restricts[] не отражён, у него нет ни срока,
+			// ни строки в базе - длительность для него пишется отдельно.
+			if(RestrictHasMapRestrict(Clients[target].Account))
+			{
+				FormatEx(buffer2, sizeof(buffer2), "%t", "Until map change");
+			}
+			else
+			{
+				int duration = Restricts[target].Expires != -1 ? ((Restricts[target].Expires - GetTime()) / 60):-1;
+				RestrictFormatDuration(buffer2, sizeof(buffer2), duration, true);
+			}
+
 			PrintToChat2(client, "%t%s", "You have restrict", buffer2, buffer);
 		}
 		else
@@ -92,21 +113,29 @@ public Action Command_Status(int client, int args)
 
 public Action Command_Ban(int client, int args)
 {
-	if(args != 2)
+	if(args != 1 && args != 2)
 	{
-		ReplyToCommand(client, "%t %t!\nSyntax: sm_eban <#name|#userid> <minutes>", "Tag", "Incorrect usage");
+		ReplyToCommand(client, "%t %t!\nSyntax: sm_eban <#name|#userid> [minutes]", "Tag", "Incorrect usage");
 	}
 	else
 	{
 		char buffer[64];
 		GetCmdArg(1, buffer, sizeof(buffer));
-		
+
 		int target = FindTarget(client, buffer, true, true);
-		
+
 		if(target > 0)
 		{
-			GetCmdArg(2, buffer, sizeof(buffer));
-			RestrictClientBan(target, client, StringToInt(buffer));
+			// Без второго аргумента - рестрикт до конца карты.
+			if(args == 1)
+			{
+				RestrictClientMapBan(target, client);
+			}
+			else
+			{
+				GetCmdArg(2, buffer, sizeof(buffer));
+				RestrictClientBan(target, client, StringToInt(buffer));
+			}
 		}
 	}
 	
@@ -299,6 +328,39 @@ void RestrictClientBan(int client, int admin, int duration)
              duration * 60, expires);
 }
 
+// Рестрикт до конца карты. Гейта по базе здесь нет намеренно: этот рестрикт для
+// того и заведён, чтобы оставаться рабочим, когда базы нет. По той же причине он
+// не занимает LastQueryEBanNotCompleted - запросов не будет.
+void RestrictClientMapBan(int client, int admin)
+{
+    // 0 в этом коде значит "аккаунт неизвестен", а не ключ поиска: попади он в
+    // список, под рестрикт разом попали бы все игроки без аккаунта.
+    if(!Clients[client].Account)
+    {
+    	PrintToChat2(admin, "%t", "Player is not loaded");
+    	return;
+    }
+    if(RestrictClientHasRestrict(client))
+    {
+    	PrintToChat2(admin, "%t", "Player is restricted");
+    	return;
+    }
+    if(!RestrictAddMapRestrict(Clients[client].Account))
+    {
+    	PrintToChat2(admin, "%t", "Map restrict list is full");
+    	LogError("RestrictClientMapBan() : map restrict list is full (%i entries)", MAX_MAP_RESTRICTS);
+    	return;
+    }
+
+    char names[2][64];
+
+    GetClientName(admin, names[0], sizeof(names[]));
+    GetClientName(client, names[1], sizeof(names[]));
+
+    PrintToChatAll2("%t", "Map ban success", names[0], names[1]);
+    LogMessage("Map ban success (Admin: %s, Target: %s)", names[0], names[1]);
+}
+
 public void SQL_Callback_BanClient(Database db, DBResultSet results, const char[] error, DataPack pack)
 {
     pack.Reset();
@@ -351,6 +413,23 @@ public void SQL_Callback_BanClient(Database db, DBResultSet results, const char[
 
 void RestrictClientUnBan(int client, int admin)
 {
+    // Если рестрикт карты у игрока единственный - снимаем здесь и в базу не идём
+    // вовсе, иначе при недоступной базе снять его было бы нечем. Проверять права
+    // на него не у кого: выдавший админ нигде не записан, строки в базе нет.
+    if(RestrictHasMapRestrict(Clients[client].Account) && !RestrictClientHasDatabaseRestrict(client))
+    {
+    	RestrictRemoveMapRestrict(Clients[client].Account);
+
+    	char names[2][64];
+
+    	GetClientName(admin, names[0], sizeof(names[]));
+    	GetClientName(client, names[1], sizeof(names[]));
+
+    	PrintToChatAll2("%t", "Unban success", names[0], names[1]);
+    	LogMessage("Unban success (Admin: %s, Target: %s)", names[0], names[1]);
+    	return;
+    }
+
     if(DB == null)
     {
     	PrintToChat2(admin, "%t", "DataBase is not loaded");
@@ -377,6 +456,12 @@ void RestrictClientUnBan(int client, int admin)
     	return;
     }
     LastQueryEBanNotCompleted = true;
+
+    // Игрок мог иметь оба рестрикта разом. Тот, что в памяти, снимаем только
+    // здесь - когда проверка прав уже пройдена, иначе отказанная команда всё
+    // равно наполовину сработала бы.
+    RestrictRemoveMapRestrict(Clients[client].Account);
+
     char ip[16];
     char names[2][64];
 
@@ -842,7 +927,67 @@ public void SQL_Callback_DeleteBanClient(Database db, DBResultSet results, const
 
 bool RestrictClientHasRestrict(int client)
 {
+	// Список карты проверяется до гейта по базе намеренно: он от неё не зависит
+	// и обязан работать, когда её нет.
+	if(RestrictHasMapRestrict(Clients[client].Account))
+		return true;
+
+	return RestrictClientHasDatabaseRestrict(client);
+}
+
+// Рестрикт из базы, без учёта списка карты. Нужен там, где эти два вида надо
+// различать - прежде всего при снятии: у одного есть строка в базе и выдавший
+// его админ, у другого нет ни того, ни другого.
+bool RestrictClientHasDatabaseRestrict(int client)
+{
 	return (DBLoaded && (Restricts[client].Expires == -1 || Restricts[client].Expires > GetTime()));
+}
+
+void RestrictOnMapStart()
+{
+	MapRestricts_Count = 0;
+}
+
+int RestrictFindMapRestrict(int account)
+{
+	for(int i = 0; i < MapRestricts_Count; i++)
+	{
+		if(MapRestricts[i] == account)
+			return i;
+	}
+
+	return -1;
+}
+
+bool RestrictHasMapRestrict(int account)
+{
+	return (RestrictFindMapRestrict(account) != -1);
+}
+
+// false - список переполнен. Молча терять рестрикт нельзя, поэтому решение
+// принимает вызывающий: он и сообщает админу, и пишет в лог.
+bool RestrictAddMapRestrict(int account)
+{
+	if(MapRestricts_Count >= MAX_MAP_RESTRICTS)
+		return false;
+
+	MapRestricts[MapRestricts_Count] = account;
+	MapRestricts_Count++;
+
+	return true;
+}
+
+void RestrictRemoveMapRestrict(int account)
+{
+	int index = RestrictFindMapRestrict(account);
+
+	if(index == -1)
+		return;
+
+	// Порядок в списке не значим, поэтому дырку затыкаем последним элементом,
+	// а не сдвигаем хвост.
+	MapRestricts_Count--;
+	MapRestricts[index] = MapRestricts[MapRestricts_Count];
 }
 
 bool RestrictIsValidDuration(int duration)

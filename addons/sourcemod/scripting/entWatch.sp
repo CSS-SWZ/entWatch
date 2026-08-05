@@ -40,7 +40,7 @@ public Plugin myinfo =
     name = "entWatch",
     author = "hEl",
     description = "Provides useful features with map items",
-    version = "1.0.3",
+    version = "1.1.0",
     url = "https://github.com/CSS-SWZ/entWatch"
 };
 
@@ -111,6 +111,7 @@ public void OnMapStart()
 {
     ConfigOnMapStart();
     ItemsOnMapStart();
+    RestrictOnMapStart();
 
     #if defined HUD
     HudOnMapStart();
