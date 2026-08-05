@@ -42,6 +42,10 @@ void ClientAuth(int client)
 {
     Clients[client].Account = GetSteamAccountID(client);
 
+    // Аккаунт стал известен - только теперь можно узнать, висит ли на игроке
+    // временный рестрикт, выданный до его переподключения.
+    RestrictClientInitTemp(client);
+
     // Гейт именно по DBLoaded, а не по "DB != null": на пути SQLite соединение
     // готово сразу, а таблиц ещё нет - запрос из OnPluginStart уходил впустую,
     // после чего SQL_Callback_CreateTables() авторизовал того же игрока второй

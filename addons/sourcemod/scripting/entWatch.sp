@@ -111,7 +111,6 @@ public void OnMapStart()
 {
     ConfigOnMapStart();
     ItemsOnMapStart();
-    RestrictOnMapStart();
 
     #if defined HUD
     HudOnMapStart();
@@ -138,6 +137,7 @@ public void OnMapEnd()
     #endif
 
     ConfigOnMapEnd();
+    RestrictOnMapEnd();
 }
 
 #if defined HALFZOMBIE

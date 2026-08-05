@@ -215,7 +215,7 @@ void BanLengthMenu(int client, int target)
 		}
 		else
 		{
-			FormatEx(buffer, sizeof(buffer), "%t", "Until map change");
+			FormatEx(buffer, sizeof(buffer), "%t", "Temporary");
 		}
 		menu.AddItem(buffer2, buffer);
 	}
@@ -253,7 +253,7 @@ public int BanLengthMenu_Handler(Menu menu, MenuAction action, int client, int i
 
 			if(index == 6)
 			{
-				RestrictClientMapBan(target, client);
+				RestrictClientTempBan(target, client);
 			}
 			else
 			{
@@ -349,13 +349,31 @@ void BannedPlayerMenu(int client, int target)
 	IntToString(GetClientUserId(target), buffer2, sizeof(buffer2));
 	Menu menu = new Menu(BannedPlayerMenu_Handler, MenuAction_Cancel | MenuAction_End | MenuAction_Select);
 	menu.SetTitle("%t", "Banned player title", target);
-	FormatEx(buffer, sizeof(buffer), "%t", "Unban item"); 
+	FormatEx(buffer, sizeof(buffer), "%t", "Unban item");
+
+	// У временного рестрикта нет ни выдавшего админа, ни строки в базе, поэтому
+	// снять его разрешено любому, кому доступна команда - то же правило, что и в
+	// RestrictClientUnBan(). Без этой ветки пункт рисовался бы серым: сравнение
+	// с Restricts[].Admin == 0 не проходит ни у кого, и меню, которым рестрикт
+	// выдали, не могло бы его же и снять.
+	if(Restricts[target].Temporary)
+	{
+		menu.AddItem(buffer2, buffer);
+
+		FormatEx(buffer, sizeof(buffer), "%t: %t", "Duration", "Temporary");
+		menu.AddItem("", buffer, ITEMDRAW_DISABLED);
+
+		menu.ExitBackButton = true;
+		menu.Display(client, 0);
+		return;
+	}
+
 	menu.AddItem(buffer2, buffer, (Restricts[target].Admin == Clients[client].Account || GetUserFlagBits(client) & ADMFLAG_ROOT) ? ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
 	FormatEx(buffer, sizeof(buffer), "Admin SteamID: [U:1:%i]", Restricts[target].Admin);
 	menu.AddItem("", buffer, ITEMDRAW_DISABLED);
 
-	FormatEx(buffer, sizeof(buffer), "%t", "Duration");		
-	
+	FormatEx(buffer, sizeof(buffer), "%t", "Duration");
+
 	if(Restricts[target].Expires == -1)
 	{
 		Format(buffer, sizeof(buffer), "%s: %t", buffer, "Permanently");
