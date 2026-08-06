@@ -5,6 +5,7 @@
 void AdminMenuInit()
 {
 	RegAdminCmd("sm_eadmin", Command_Admin, ADMFLAG_GENERIC);
+	AdminConfigEditorInit();
 }
 
 public Action Command_Admin(int client, int args)
@@ -823,6 +824,20 @@ enum struct EditClientConfig
 }
 
 EditClientConfig EditClientsConfigs[MAXPLAYERS + 1];
+
+// Сентинел "не редактирует" - это -1, а глобальный массив стартует нулями, то
+// есть слот читается как "правит конфиг #0". Слоты, не проходившие через
+// AdminOnClientPutInServer() - свободные и боты, включая SourceTV, у которых
+// OnClientPutInServer() выходит по IsFakeClient, - иначе держат редактор
+// занятым всё время работы плагина, и AdminConfigEditorGet() отвечает "занято"
+// на любое действие в меню конфигов.
+void AdminConfigEditorInit()
+{
+	for(int i = 1; i <= MAXPLAYERS; i++)
+	{
+		EditClientsConfigs[i].Clear();
+	}
+}
 
 // Редактор конфигов один на сервер. Два админа, правящие Configs[] одновременно,
 // затирают правки друг друга, а удаление конфига сдвигает массив под чужим
