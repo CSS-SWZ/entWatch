@@ -188,3 +188,29 @@ ModulesInit(); перед циклом игроков. Основание: ша�
 ```
 
 Проверено: скрипт `symbols.py` и чтение. Не компилировалось.
+
+## Шаг 2.4
+
+SELECT_BANS и SQL_Callback_SelectBans перенесены из client.sp в builtin/load.sp.
+
+Не перенос: Новая void RestrictOnClientAuth(int client) содержит прежнюю вторую половину ClientAuth побайтно, включая комментарии; в ClientAuth после чтения Account оставлен вызов RestrictOnClientAuth(client);. Основание: шаг 2.4.
+
+Наблюдения: Незапланированных изменений не обнаружено.
+
+Проверка: `python docs/restructure/tools/symbols.py --allow ClientAuth --allow RestrictOnClientAuth`; код 0.
+
+```text
+База: HEAD; сравнивается: рабочее дерево; сравнено сборок: 128 (перебор BOTOX_SM, HUD, ASSIST_USE, ADMIN_MENU, HALFZOMBIE, RESTRICT_BUILTIN, _zr_included)
+
+Перенесены без изменений:
+  define SELECT_BANS                              entWatch/client.sp -> entWatch/restrict/builtin/load.sp
+  func   SQL_Callback_SelectBans                  entWatch/client.sp -> entWatch/restrict/builtin/load.sp
+
+Расхождения:
+  func      ClientAuth                               изменён текст, во всех сборках  (разрешено)
+  func      RestrictOnClientAuth                     добавлен или попал в эту сборку, во всех сборках  (разрешено)
+
+ИТОГ: только перенос; незапланированных расхождений нет.
+```
+
+Проверено: скрипт `symbols.py` и чтение. Не компилировалось.

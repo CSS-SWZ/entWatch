@@ -1,5 +1,3 @@
-#define SELECT_BANS "SELECT * FROM `ebans` WHERE (`expires` = -1 OR `expires` > %i) AND (`pid` = %i OR `pip` = '%s') LIMIT 1;"
-
 enum struct Client
 {
     int Account;
@@ -42,59 +40,7 @@ void ClientAuth(int client)
 {
     Clients[client].Account = GetSteamAccountID(client);
 
-    // Аккаунт стал известен - только теперь можно узнать, висит ли на игроке
-    // временный рестрикт, выданный до его переподключения.
-    RestrictClientInitTemp(client);
-
-    // Гейт именно по DBLoaded, а не по "DB != null": на пути SQLite соединение
-    // готово сразу, а таблиц ещё нет - запрос из OnPluginStart уходил впустую,
-    // после чего SQL_Callback_CreateTables() авторизовал того же игрока второй
-    // раз, и entWatch_OnClientLoaded улетал дважды.
-    if(!DBLoaded)
-    {
-        // Базы нет - значит нет и рестриктов: тот же fail-open, что и в
-        // RestrictClientHasRestrict(), иначе игрок не сможет поднять предмет.
-        // Форвард отсюда не шлём - загрузка ещё не состоялась, её выполнит
-        // повторный вызов из SQL_Callback_CreateTables().
-        Clients[client].Authorized = true;
-        return;
-    }
-
-    char ip[16];
-
-    if(!Clients[client].Account || !GetClientIP(client, ip, sizeof(ip)))
-        return;
-
-    DB_Query(SQL_Callback_SelectBans, GetClientUserId(client), DBPrio_Normal, SELECT_BANS, GetTime(), Clients[client].Account, ip);
-}
-
-public void SQL_Callback_SelectBans(Database db, DBResultSet results, const char[] error, int userid)
-{
-    int client = GetClientOfUserId(userid);
-
-    if(client == 0)
-        return;
-
-    // Проверяем именно results: строка ошибки может остаться пустой при неудаче (dbi.inc:334-337).
-    if(results == null)
-    {
-        // Ответа от БД нет - значит и рестрикта нет. Тот же fail-open,
-        // что и в RestrictClientHasRestrict(), иначе игрок навсегда останется
-        // без права поднимать предметы (OnWeaponTouch).
-        LogError("SQL_Callback_SelectBans() : %s", error);
-    }
-    else
-    {
-        if(results.FetchRow())
-        {
-            RestrictCacheClientBan(client, results);
-        }
-
-        RestrictLoadClientSummBans(client);
-    }
-
-    Clients[client].Authorized = true;
-    APIOnClientLoaded(client);
+    RestrictOnClientAuth(client);
 }
 
 public void OnClientCookiesCached(int client)
