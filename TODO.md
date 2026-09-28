@@ -5,13 +5,19 @@ What is left, and what was deliberately left alone. History of completed work li
 
 ## Verification debt
 
-Everything since `1.0.3` is verified **by compilation only**. Neither `1.1.0` nor `1.1.1` has
-been exercised on the live server. Worth walking through once:
+Everything since `1.0.3` is verified **by compilation only**. Neither `1.1.0`, `1.1.1` nor
+`1.1.2` has been exercised on the live server. Worth walking through once:
 
 - temporary restrictions — grant with `sm_eban <player>` and no duration, check `sm_status`,
   lift with `sm_uneban`, confirm they survive a reconnect and die on a map change;
 - the config editor — open, edit a field, save, reopen; confirm a second admin is told it is
-  busy and that the lock releases when the first one leaves.
+  busy and that the lock releases when the first one leaves;
+- the `1.1.2` module restructure — behaviour must be unchanged. It moved code between files
+  and reordered a few calls, so check the paths it touched: plugin load and database connect
+  (`DatabaseConnect()` now runs from `RestrictInit()`, earlier in `OnPluginStart()`); a player
+  joining (restriction loaded, `sm_status` correct); `sm_eban` / `sm_uneban` /
+  `sm_addeban` / `sm_deleban`; every `sm_eadmin` menu, including config save and Reload; the
+  HUD and `sm_hud`; item pickup, use, drop and owner death.
 
 ## Planned
 
