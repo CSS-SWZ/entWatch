@@ -212,6 +212,23 @@ busy» на любое действие, включая «Add».
 План и решения сохранены в `docs/restructure/` как история процесса.
 Проверено скриптом `docs/restructure/tools/symbols.py` и компиляцией владельцем.
 
+## Версия 1.2.0 — рестрикты из RestrictCore
+
+Ветка `feat/restrictcore`. Новая реализация фасада `restrict/core.sp` под define
+`RESTRICT_CORE` (в продакшне вместо `RESTRICT_BUILTIN`): вид `entwatch.pickup`, флаг игрока из
+`RC_IsRestricted`, `RCOnClientReady` и `RCOnRestrictChanged`. Интеграцию написал владелец,
+доработки после ревью:
+
+- игрок авторизуется сразу в `RestrictOnClientAuth`, а не в `RCOnClientReady`: форвард приходит
+  только после загрузки данных ядром, и без ядра или его базы никто не мог поднять предмет;
+- `APIOnClientLoaded` отправляется при авторизации, `entWatch_IsDatabaseLoaded` отвечает
+  «ядро загружено»;
+- в контракт фасада добавлены `RestrictOnAllPluginsLoaded` и `RestrictOnLibraryAdded/Removed`;
+  `restrict.sp` выбирает реализацию через `#if/#elseif/#else`, два define'а сразу — `#error`.
+
+Проверено скриптом `symbols.py` (256 сборок) и чтением исходников RestrictCore; собрано и
+проверено на сервере владельцем 2026-09-28.
+
 ## Как собирать
 
 ```

@@ -1,3 +1,17 @@
+void RestrictOnLibraryAdded(const char[] name)
+{
+    #pragma unused name
+}
+
+void RestrictOnLibraryRemoved(const char[] name)
+{
+    #pragma unused name
+}
+
+void RestrictOnAllPluginsLoaded()
+{
+}
+
 // Без системы рестриктов команды и хранилище не нужны.
 void RestrictInit()
 {
@@ -12,6 +26,7 @@ void RestrictOnClientAuth(int client)
 // Реализация не хранит состояние слота.
 void RestrictOnClientDisconnect(int client)
 {
+    #pragma unused client
 }
 
 // Реализация не хранит временные рестрикты карты.
@@ -22,6 +37,7 @@ void RestrictOnMapEnd()
 // Эта реализация никого не ограничивает: рестрикты отключены.
 bool RestrictClientHasRestrict(int client)
 {
+    #pragma unused client
     return false;
 }
 

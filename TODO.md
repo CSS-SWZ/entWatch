@@ -5,8 +5,9 @@ What is left, and what was deliberately left alone. History of completed work li
 
 ## Verification debt
 
-Everything since `1.0.3` is verified **by compilation only**. Neither `1.1.0`, `1.1.1` nor
-`1.1.2` has been exercised on the live server. Worth walking through once:
+Everything from `1.0.3` to `1.1.2` is verified **by compilation only**; `1.2.0` (the RestrictCore
+integration) was checked by the owner on the live server on 2026-09-28. Worth walking through
+once:
 
 - temporary restrictions — grant with `sm_eban <player>` and no duration, check `sm_status`,
   lift with `sm_uneban`, confirm they survive a reconnect and die on a map change;
