@@ -100,3 +100,43 @@ ModulesInit(); перед циклом игроков. Основание: ша�
 ```
 
 Проверено: скрипт `symbols.py` и чтение. Не компилировалось.
+
+## Шаг 2.2
+
+Из builtin.sp в builtin/temp.sp перенесены временные рестрикты и их данные, в builtin/utils.sp — проверки/форматирование, в builtin/commands.sp — пять команд. UTIL_* с комментарием // R1KO перенесены из helpers.sp в utils.sp. Общие Restrict, Restricts[] и LastQueryEBanNotCompleted подняты перед include; текст символов сохранён.
+
+Не перенос: Нет.
+
+Наблюдения: Незапланированных изменений не обнаружено.
+
+Проверка: `python docs/restructure/tools/symbols.py `; код 0.
+
+```text
+База: HEAD; сравнивается: рабочее дерево; сравнено сборок: 128 (перебор BOTOX_SM, HUD, ASSIST_USE, ADMIN_MENU, HALFZOMBIE, RESTRICT_BUILTIN, _zr_included)
+
+Перенесены без изменений:
+  func   UTIL_GetAccountIDFromSteamID             entWatch/helpers.sp -> entWatch/restrict/builtin/utils.sp
+  func   UTIL_GetSteamIDFromAccountID             entWatch/helpers.sp -> entWatch/restrict/builtin/utils.sp
+  func   Command_AddBan                           entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/commands.sp
+  func   Command_Ban                              entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/commands.sp
+  func   Command_DeleteBan                        entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/commands.sp
+  func   Command_Status                           entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/commands.sp
+  func   Command_UnBan                            entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/commands.sp
+  define MAX_TEMP_RESTRICTS                       entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/temp.sp
+  func   RestrictAddTempRestrict                  entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/temp.sp
+  func   RestrictClientInitTemp                   entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/temp.sp
+  func   RestrictFindTempRestrict                 entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/temp.sp
+  func   RestrictHasTempRestrict                  entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/temp.sp
+  func   RestrictOnMapEnd                         entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/temp.sp
+  func   RestrictRemoveTempRestrict               entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/temp.sp
+  global TempRestricts                            entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/temp.sp
+  global TempRestricts_Count                      entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/temp.sp
+  func   RestrictFormatDuration                   entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/utils.sp
+  func   RestrictGetExpireValue                   entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/utils.sp
+  func   RestrictIsValidDuration                  entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/utils.sp
+  func   RestrictIsValidIP                        entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/utils.sp
+
+ИТОГ: только перенос; незапланированных расхождений нет.
+```
+
+Проверено: скрипт `symbols.py` и чтение. Не компилировалось.

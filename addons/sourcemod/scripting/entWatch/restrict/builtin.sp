@@ -1,16 +1,3 @@
-#define SELECT_SUMM_BANS    "SELECT COUNT(`pid`), SUM(`duration`) FROM `ebans` WHERE (`pid` = %i OR `pip` = '%s');"
-#define INSERT_BAN          "INSERT INTO `ebans` (`pid`, `pname`, `pip`, `aid`, `aname`, `duration`, `expires`) VALUES (%i, '%s', '%s', %i, '%s', %i, %i);"
-#define DELETE_BAN          "DELETE FROM `ebans` WHERE (`expires` = -1 OR `expires` > %i) AND (`pid` = %i OR `pip` = '%s')"
-#define INSERT_ADD_BAN      "INSERT INTO `ebans` (`pid`, `pip`, `aid`, `aname`, `duration`, `expires`) VALUES (%i, '%s', %i, '%s', %i, %i);"
-
-#define SELECT_BAN_ID_IP    "SELECT `pid` FROM `ebans` WHERE (`expires` = -1 OR `expires` > %i) AND (`pid` = %i AND `pip` = '%s') LIMIT 1;"
-#define SELECT_BAN_ID       "SELECT `pid` FROM `ebans` WHERE (`expires` = -1 OR `expires` > %i) AND `pid` = %i LIMIT 1;"
-#define SELECT_BAN_IP       "SELECT `pid` FROM `ebans` WHERE (`expires` = -1 OR `expires` > %i) AND `pip` = '%s' LIMIT 1;"
-
-#define DELETE_BAN_ID_IP    "DELETE FROM `ebans` WHERE (`expires` = -1 OR `expires` > %i) AND (`pid` = %i AND `pip` = '%s');"
-#define DELETE_BAN_ID       "DELETE FROM `ebans` WHERE (`expires` = -1 OR `expires` > %i) AND `pid` = %i;"
-#define DELETE_BAN_IP       "DELETE FROM `ebans` WHERE (`expires` = -1 OR `expires` > %i) AND `pip` = '%s';"
-
 enum struct Restrict
 {
     int Count;
@@ -39,16 +26,24 @@ enum struct Restrict
 
 Restrict Restricts[MAXPLAYERS + 1];
 
-// Временные рестрикты - до ближайшей смены карты. Живут только в памяти и в базу
-// не попадают, поэтому работают и тогда, когда база недоступна: обычные рестрикты
-// в этом случае выключены целиком (fail-open), и восстановить порядок было бы
-// нечем. Ключ - аккаунт, а не слот, так что перезаход игрока рестрикт не снимает.
-// Сам список читается только при подключении, выдаче и снятии; горячий путь
-// смотрит в Restricts[].Temporary.
-#define MAX_TEMP_RESTRICTS 100
+bool LastQueryEBanNotCompleted;
 
-int TempRestricts[MAX_TEMP_RESTRICTS];
-int TempRestricts_Count;
+#include "builtin/utils.sp"
+#include "builtin/temp.sp"
+#include "builtin/commands.sp"
+
+#define SELECT_SUMM_BANS    "SELECT COUNT(`pid`), SUM(`duration`) FROM `ebans` WHERE (`pid` = %i OR `pip` = '%s');"
+#define INSERT_BAN          "INSERT INTO `ebans` (`pid`, `pname`, `pip`, `aid`, `aname`, `duration`, `expires`) VALUES (%i, '%s', '%s', %i, '%s', %i, %i);"
+#define DELETE_BAN          "DELETE FROM `ebans` WHERE (`expires` = -1 OR `expires` > %i) AND (`pid` = %i OR `pip` = '%s')"
+#define INSERT_ADD_BAN      "INSERT INTO `ebans` (`pid`, `pip`, `aid`, `aname`, `duration`, `expires`) VALUES (%i, '%s', %i, '%s', %i, %i);"
+
+#define SELECT_BAN_ID_IP    "SELECT `pid` FROM `ebans` WHERE (`expires` = -1 OR `expires` > %i) AND (`pid` = %i AND `pip` = '%s') LIMIT 1;"
+#define SELECT_BAN_ID       "SELECT `pid` FROM `ebans` WHERE (`expires` = -1 OR `expires` > %i) AND `pid` = %i LIMIT 1;"
+#define SELECT_BAN_IP       "SELECT `pid` FROM `ebans` WHERE (`expires` = -1 OR `expires` > %i) AND `pip` = '%s' LIMIT 1;"
+
+#define DELETE_BAN_ID_IP    "DELETE FROM `ebans` WHERE (`expires` = -1 OR `expires` > %i) AND (`pid` = %i AND `pip` = '%s');"
+#define DELETE_BAN_ID       "DELETE FROM `ebans` WHERE (`expires` = -1 OR `expires` > %i) AND `pid` = %i;"
+#define DELETE_BAN_IP       "DELETE FROM `ebans` WHERE (`expires` = -1 OR `expires` > %i) AND `pip` = '%s';"
 
 void RestrictInit()
 {
@@ -58,153 +53,6 @@ void RestrictInit()
     RegAdminCmd("sm_uneban",    Command_UnBan,     ADMFLAG_GENERIC);
     RegAdminCmd("sm_addeban",   Command_AddBan,    ADMFLAG_RCON);
     RegAdminCmd("sm_deleban",   Command_DeleteBan, ADMFLAG_RCON);
-}
-
-public Action Command_Status(int client, int args)
-{
-	int target = client;
-	
-	char buffer[64];
-	if(args)
-	{
-		GetCmdArg(1, buffer, sizeof(buffer));
-		target = FindTarget(client, buffer, true, false);
-		
-		if(target <= 0)
-		{
-			target = client;
-			return Plugin_Handled;
-		}
-		else if(target != client)
-		{
-			Format(buffer, 64, " (%N)", target);
-		}
-		else
-		{
-			buffer[0] = 0;
-		}
-	}
-	if(Clients[target].Authorized)
-	{
-		if(RestrictClientHasRestrict(target))
-		{
-			char buffer2[256];
-			SetGlobalTransTarget(client);
-
-			// У временного рестрикта нет ни срока, ни строки в базе, поэтому
-			// длительность для него пишется отдельно.
-			if(Restricts[target].Temporary)
-			{
-				FormatEx(buffer2, sizeof(buffer2), "%t", "Temporary");
-			}
-			else
-			{
-				int duration = Restricts[target].Expires != -1 ? ((Restricts[target].Expires - GetTime()) / 60):-1;
-				RestrictFormatDuration(buffer2, sizeof(buffer2), duration, true);
-			}
-
-			PrintToChat2(client, "%t%s", "You have restrict", buffer2, buffer);
-		}
-		else
-		{
-			PrintToChat2(client, "%t%s", "You have not restrict", buffer);
-		}
-	}
-	else
-	{
-		PrintToChat2(client, "%t%s", "You were not logged in to the database", buffer);
-	}
-	
-	return Plugin_Handled;
-}
-
-public Action Command_Ban(int client, int args)
-{
-	if(args < 1)
-	{
-		ReplyToCommand(client, "%t %t!\nSyntax: sm_eban <#name|#userid> [minutes]", "Tag", "Incorrect usage");
-	}
-	else
-	{
-		char buffer[64];
-		GetCmdArg(1, buffer, sizeof(buffer));
-
-		int target = FindTarget(client, buffer, true, true);
-
-		if(target > 0)
-		{
-			// Без второго аргумента - временный рестрикт, до смены карты.
-			if(args == 1)
-			{
-				RestrictClientTempBan(target, client);
-			}
-			else
-			{
-				GetCmdArg(2, buffer, sizeof(buffer));
-				RestrictClientBan(target, client, StringToInt(buffer));
-			}
-		}
-	}
-	
-	return Plugin_Handled;
-}
-
-public Action Command_UnBan(int client, int args)
-{
-	if(args != 1)
-	{
-		ReplyToCommand(client, "%t %t!\nSyntax: sm_uneban <#name|#userid>", "Tag", "Incorrect usage");
-	}
-	else
-	{
-		char buffer[64];
-		GetCmdArg(1, buffer, sizeof(buffer));
-		
-		int target = FindTarget(client, buffer, true, false);
-		
-		if(target > 0)
-		{
-			RestrictClientUnBan(target, client);
-		}
-	}
-	
-	return Plugin_Handled;
-}
-
-public Action Command_AddBan(int client, int args)
-{
-    if(args < 2)
-    {
-    	ReplyToCommand(client, "%t %t!\nSyntax: sm_addeban <minutes> [steamid] [ip]", "Tag", "Incorrect usage");
-    }
-    else
-    {
-    	char buffer[64];
-        char ip[16];
-    	GetCmdArg(1, buffer, sizeof(buffer));
-    	int duration = StringToInt(buffer);
-    	GetCmdArg(2, buffer, sizeof(buffer));
-    	GetCmdArg(3, ip, sizeof(ip));
-    	RestrictAddBan(duration, buffer, ip, client);
-    }
-    return Plugin_Handled;
-}
-
-
-public Action Command_DeleteBan(int client, int args)
-{
-	if(args < 1)
-	{
-		ReplyToCommand(client, "%t %t!\nSyntax: sm_deleban [steamid] [ip]", "Tag", "Incorrect usage");
-	}
-	else
-	{
-		char steamid[64], ip[16];
-		GetCmdArg(1, steamid, sizeof(steamid));
-		GetCmdArg(2, ip, sizeof(ip));
-		RestrictDeleteBan(steamid, ip, client);
-	}
-	return Plugin_Handled;
 }
 
 void RestrictCacheClientBan(int client, DBResultSet results)
@@ -270,8 +118,6 @@ void RestrictOnClientDisconnect(int client)
 {
     Restricts[client].Clear();
 }
-
-bool LastQueryEBanNotCompleted;
 
 void RestrictClientBan(int client, int admin, int duration)
 {
@@ -563,28 +409,6 @@ void RestrictClearCacheByBanKey(int account, const char[] ip)
 		Restricts[i].Duration = 0;
 		Restricts[i].Expires = 0;
 	}
-}
-
-// Минимальная проверка IPv4: только цифры и ровно три точки. Прежняя проверка
-// сравнивала strlen(ip) с 16, чего буфер char[16] достичь не может, поэтому все
-// ветки поиска по IP были мёртвым кодом.
-bool RestrictIsValidIP(const char[] ip)
-{
-	int dots = 0;
-
-	for(int i = 0; ip[i] != '\0'; i++)
-	{
-		if(ip[i] == '.')
-		{
-			dots++;
-			continue;
-		}
-
-		if(!IsCharNumeric(ip[i]))
-			return false;
-	}
-
-	return (dots == 3);
 }
 
 // Собирает запрос поиска действующего рестрикта. Ключом может быть SteamID, IP
@@ -959,97 +783,3 @@ bool RestrictClientHasDatabaseRestrict(int client)
 	return (DBLoaded && (Restricts[client].Expires == -1 || Restricts[client].Expires > GetTime()));
 }
 
-// Пересевает кэш из списка. Зовётся из ClientAuth, как только становится известен
-// аккаунт: это единственный момент, когда игрок мог получить временный рестрикт
-// до своего подключения - выдали, он вышел и вернулся.
-void RestrictClientInitTemp(int client)
-{
-	Restricts[client].Temporary = RestrictHasTempRestrict(Clients[client].Account);
-}
-
-// Сброс привязан к концу карты, а не к началу, намеренно. Кнопка Reload в
-// sm_eadmin вызывает OnMapStart() руками, чтобы перечитать конфиги предметов, и
-// на старте здесь она стирала бы заодно все временные рестрикты - молча, посреди
-// карты. OnMapEnd она не вызывает, а настоящая смена карты вызывает всегда.
-void RestrictOnMapEnd()
-{
-	TempRestricts_Count = 0;
-
-	// Список опустел - опустошаем и кэш. На смене карты OnClientDisconnect
-	// приходит на всех, и Clear() сбросил бы флаги сам, но полагаться на порядок
-	// этих двух событий не нужно: здесь дешевле пройти по слотам явно.
-	for(int i = 1; i <= MaxClients; i++)
-	{
-		Restricts[i].Temporary = false;
-	}
-}
-
-int RestrictFindTempRestrict(int account)
-{
-	for(int i = 0; i < TempRestricts_Count; i++)
-	{
-		if(TempRestricts[i] == account)
-			return i;
-	}
-
-	return -1;
-}
-
-bool RestrictHasTempRestrict(int account)
-{
-	return (RestrictFindTempRestrict(account) != -1);
-}
-
-// false - список переполнен. Молча терять рестрикт нельзя, поэтому решение
-// принимает вызывающий: он и сообщает админу, и пишет в лог.
-bool RestrictAddTempRestrict(int account)
-{
-	if(TempRestricts_Count >= MAX_TEMP_RESTRICTS)
-		return false;
-
-	TempRestricts[TempRestricts_Count] = account;
-	TempRestricts_Count++;
-
-	return true;
-}
-
-void RestrictRemoveTempRestrict(int account)
-{
-	int index = RestrictFindTempRestrict(account);
-
-	if(index == -1)
-		return;
-
-	// Порядок в списке не значим, поэтому дырку затыкаем последним элементом,
-	// а не сдвигаем хвост.
-	TempRestricts_Count--;
-	TempRestricts[index] = TempRestricts[TempRestricts_Count];
-}
-
-bool RestrictIsValidDuration(int duration)
-{
-	return (duration == -1 || 0 < duration < 525600);
-}
-
-int RestrictGetExpireValue(int time, int duration)
-{
-	return duration != -1 ? (time + duration * 60):-1;
-}
-
-void RestrictFormatDuration(char[] buffer, int size, int duration, bool translate)
-{
-    if(duration == -1)
-    {
-    	FormatEx(buffer, size, translate ? "%t":"%s", "Permanently");
-        return;
-    }
-
-    if(translate)
-    {
-    	FormatEx(buffer, size, "%t", "Minutes", duration);
-    }
-    else
-    {
-    	FormatEx(buffer, size, "%i minutes", duration);
-    }
-}
