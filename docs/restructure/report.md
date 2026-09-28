@@ -533,3 +533,31 @@ AdminConfigSave и AdminConfigBrowseItems перенесены из admin_menu.s
 ```
 
 Проверено: скрипт `symbols.py` и чтение. Не компилировалось.
+
+## Шаг 4.1
+
+Семь функций чтения форматов карты перенесены из config.sp в config/parse.sp; RemoveConfig перенесена из helpers.sp в config.sp. Include parse/save стоят после констант и Configs[]. Тексты символов сохранены.
+
+Не перенос: Нет.
+
+Наблюдения: Незапланированных изменений не обнаружено.
+
+Проверка: `python docs/restructure/tools/symbols.py `; код 0.
+
+```text
+База: HEAD; сравнивается: рабочее дерево; сравнено сборок: 128 (перебор BOTOX_SM, HUD, ASSIST_USE, ADMIN_MENU, HALFZOMBIE, RESTRICT_BUILTIN, _zr_included)
+
+Перенесены без изменений:
+  func   ConfigBrowse                             entWatch/config.sp -> entWatch/config/parse.sp
+  func   ConfigBrowseKey                          entWatch/config.sp -> entWatch/config/parse.sp
+  func   ConfigBrowseKeyGFL                       entWatch/config.sp -> entWatch/config/parse.sp
+  func   ConfigBrowseKeyUNLOZE                    entWatch/config.sp -> entWatch/config/parse.sp
+  func   ConfigGetType                            entWatch/config.sp -> entWatch/config/parse.sp
+  func   ConfigLoad                               entWatch/config.sp -> entWatch/config/parse.sp
+  func   ConfigParse                              entWatch/config.sp -> entWatch/config/parse.sp
+  func   RemoveConfig                             entWatch/helpers.sp -> entWatch/config.sp
+
+ИТОГ: только перенос; незапланированных расхождений нет.
+```
+
+Проверено: скрипт `symbols.py` и чтение. Не компилировалось.

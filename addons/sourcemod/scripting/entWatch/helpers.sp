@@ -1,15 +1,3 @@
-stock void RemoveConfig(int config)
-{
-	for(int i = config; i < Configs_Count - 1; i++)
-	{
-		Configs[i] = Configs[i + 1];
-	}
-
-	Configs_Count--;
-
-	RemoveItemByConfig(config);
-}
-
 stock void RemoveItemByConfig(int config)
 {
 	int i = 0;
