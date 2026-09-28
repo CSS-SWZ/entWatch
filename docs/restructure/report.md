@@ -473,3 +473,41 @@ database.sp целиком перенесён в restrict/builtin/database.sp; �
 ```
 
 Проверено: скрипт `symbols.py` и чтение. Не компилировалось.
+
+## Шаг 3.1
+
+Из admin_menu.sp перенесены шесть меню передачи в admin_menu/transfer.sp, целый блок #if ASSIST_USE с двумя меню использования в admin_menu/use.sp, enum struct EditClientConfig, массив и функции редактора в admin_menu/config_editor.sp. Include после ADMIN_MENU-гейта; тексты и сочетания define сохранены.
+
+Не перенос: Нет.
+
+Наблюдения: Незапланированных изменений не обнаружено.
+
+Проверка: `python docs/restructure/tools/symbols.py `; код 0.
+
+```text
+База: HEAD; сравнивается: рабочее дерево; сравнено сборок: 128 (перебор BOTOX_SM, HUD, ASSIST_USE, ADMIN_MENU, HALFZOMBIE, RESTRICT_BUILTIN, _zr_included)
+
+Перенесены без изменений:
+  func   AdminConfigEditorGet                     entWatch/admin_menu.sp -> entWatch/admin_menu/config_editor.sp
+  func   AdminConfigEditorInit                    entWatch/admin_menu.sp -> entWatch/admin_menu/config_editor.sp
+  func   AdminOnClientPutInServer                 entWatch/admin_menu.sp -> entWatch/admin_menu/config_editor.sp
+  func   AdminOnClientSayCommand                  entWatch/admin_menu.sp -> entWatch/admin_menu/config_editor.sp
+  func   ConfigMenu                               entWatch/admin_menu.sp -> entWatch/admin_menu/config_editor.sp
+  func   ConfigMenu_Handler                       entWatch/admin_menu.sp -> entWatch/admin_menu/config_editor.sp
+  func   ConfigsMenu                              entWatch/admin_menu.sp -> entWatch/admin_menu/config_editor.sp
+  func   ConfigsMenu_Handler                      entWatch/admin_menu.sp -> entWatch/admin_menu/config_editor.sp
+  global EditClientsConfigs                       entWatch/admin_menu.sp -> entWatch/admin_menu/config_editor.sp
+  type   EditClientConfig                         entWatch/admin_menu.sp -> entWatch/admin_menu/config_editor.sp
+  func   TransferByMapMenu                        entWatch/admin_menu.sp -> entWatch/admin_menu/transfer.sp
+  func   TransferByMapMenu_Handler                entWatch/admin_menu.sp -> entWatch/admin_menu/transfer.sp
+  func   TransferByTargetMenu                     entWatch/admin_menu.sp -> entWatch/admin_menu/transfer.sp
+  func   TransferByTargetMenu_Handler             entWatch/admin_menu.sp -> entWatch/admin_menu/transfer.sp
+  func   TransferMenu                             entWatch/admin_menu.sp -> entWatch/admin_menu/transfer.sp
+  func   TransferMenu_Handler                     entWatch/admin_menu.sp -> entWatch/admin_menu/transfer.sp
+  func   UseItemMenu_Handler                      entWatch/admin_menu.sp -> entWatch/admin_menu/use.sp
+  func   UseItemsMenu                             entWatch/admin_menu.sp -> entWatch/admin_menu/use.sp
+
+ИТОГ: только перенос; незапланированных расхождений нет.
+```
+
+Проверено: скрипт `symbols.py` и чтение. Не компилировалось.
