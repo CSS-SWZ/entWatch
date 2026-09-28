@@ -78,8 +78,6 @@ void ItemsClear()
     Items_Count = 0;
 }
 
-// Возвращает кнопку по приоритету. Сначало func_button. Кнопка будет определена как айтем-кнопка.
-
 void ItemsOnEntityDestroyed(int entity)
 {
     for(int i = 0; i < Items_Count; i++)
@@ -118,78 +116,6 @@ void ItemsOnEntityDestroyed(int entity)
             return;
         }
     }
-}
-
-stock void ItemFormat(int item, char[] finalBuffer, int maxlength)
-{
-    if(Items[item].RemovedButton)
-    {
-        FormatEx(finalBuffer, maxlength, "%s[D]: %N\n", Configs[Items[item].Config].ShortName, Items[item].Owner);
-        return;
-    }
-    float cd = Items[item].Cooldown - GetGameTime();
-    int id = Items[item].Config;
-    static char buffer[16];
-    switch(Configs[id].Mode)
-    {
-    	case MODE_COOLDOWN:
-    	{
-    		if (cd > 0.0)
-    		{
-    			FormatEx(buffer, sizeof(buffer), "[%i]", RoundToCeil(cd));
-    		}
-    		else
-    		{
-    			FormatEx(buffer, sizeof(buffer), "[%s]", "R");
-    		}
-    	}
-    	case MODE_MAXUSES:
-    	{
-    		if (Items[item].Uses < Configs[id].Maxuses)
-    		{
-    			FormatEx(buffer, sizeof(buffer), "[%i/%i]", Items[item].Uses, Configs[id].Maxuses);
-    		}
-    		else
-    		{
-    			FormatEx(buffer, sizeof(buffer), "[%s]", "D");
-    		}
-    	}
-    	case MODE_MAXUSESCD:
-    	{
-    		if (cd > 0.0)
-    		{
-    			FormatEx(buffer, sizeof(buffer), "[%i]", RoundToCeil(cd));
-    		}
-    		else
-    		{
-    			if (Items[item].Uses < Configs[id].Maxuses)
-    			{
-    				FormatEx(buffer, sizeof(buffer), "[%i/%i]", Items[item].Uses, Configs[id].Maxuses);
-    			}
-    			else
-    			{
-    				FormatEx(buffer, sizeof(buffer), "[%s]", "D");
-    			}
-    		}
-    	}
-    	case MODE_CHARGESCD:
-    	{
-    		if (cd > 0.0)
-    		{
-    			FormatEx(buffer, sizeof(buffer), "[%i]", RoundToCeil(cd));
-    		}
-    		else
-    		{
-    			FormatEx(buffer, sizeof(buffer), "[%i/%i]", Items[item].Uses, Configs[id].Maxuses);
-    		}
-    	}
-    	default:
-    	{
-    		FormatEx(buffer, sizeof(buffer), "[%s]", "N/A");
-    	}
-    }
-
-    FormatEx(finalBuffer, maxlength, "%s%s: %N\n", Configs[id].ShortName, buffer, Items[item].Owner);
 }
 
 void ItemRemove(int item)

@@ -220,6 +220,8 @@ public Action Timer_ItemFindButton(Handle timer, int ref)
     return Plugin_Continue;
 }
 
+// Возвращает кнопку по приоритету. Сначало func_button. Кнопка будет определена как айтем-кнопка.
+
 int ItemsGetButtonByPriority(int button, int physbox, int door)
 {
     if(button)  return button;
