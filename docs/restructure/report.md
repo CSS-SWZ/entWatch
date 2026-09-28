@@ -214,3 +214,38 @@ SELECT_BANS и SQL_Callback_SelectBans перенесены из client.sp в bu
 ```
 
 Проверено: скрипт `symbols.py` и чтение. Не компилировалось.
+
+## Шаг 2.5
+
+database.sp целиком перенесён в restrict/builtin/database.sp; его include убран из медиатора и поставлен первым среди include builtin.sp.
+
+Не перенос: Добавлена bool RestrictIsDatabaseLoaded() { return DBLoaded; }; Native_IsDatabaseLoaded возвращает RestrictIsDatabaseLoaded();. DatabaseConnect(); перенесён из OnPluginStart последней строкой RestrictInit. Основание: шаг 2.5; TransferInit/SpawnInit/StripperInit только регистрируют команды.
+
+Наблюдения: Ревью уточнило обоснование отсрочки DB.Query по локальному форку css-swz/sourcemod 366cf73e. Fallback синхронного callback существует при выгрузке, но не в обычном OnPluginStart. inventory.md уточнён с путями и границами доказательства. Код SQL и callback не менялся.
+
+Проверка: `python docs/restructure/tools/symbols.py --allow Native_IsDatabaseLoaded --allow RestrictIsDatabaseLoaded --allow OnPluginStart --allow RestrictInit`; код 0.
+
+```text
+База: HEAD; сравнивается: рабочее дерево; сравнено сборок: 128 (перебор BOTOX_SM, HUD, ASSIST_USE, ADMIN_MENU, HALFZOMBIE, RESTRICT_BUILTIN, _zr_included)
+
+Перенесены без изменений:
+  define MYSQL_CHARSET                            entWatch/database.sp -> entWatch/restrict/builtin/database.sp
+  func   ConnectCallBack                          entWatch/database.sp -> entWatch/restrict/builtin/database.sp
+  func   DB_Query                                 entWatch/database.sp -> entWatch/restrict/builtin/database.sp
+  func   DatabaseConnect                          entWatch/database.sp -> entWatch/restrict/builtin/database.sp
+  func   SQL_Callback_CheckError                  entWatch/database.sp -> entWatch/restrict/builtin/database.sp
+  func   SQL_Callback_CreateTables                entWatch/database.sp -> entWatch/restrict/builtin/database.sp
+  global DB                                       entWatch/database.sp -> entWatch/restrict/builtin/database.sp
+  global DBLoaded                                 entWatch/database.sp -> entWatch/restrict/builtin/database.sp
+  global SQLite                                   entWatch/database.sp -> entWatch/restrict/builtin/database.sp
+
+Расхождения:
+  func      Native_IsDatabaseLoaded                  изменён текст, во всех сборках  (разрешено)
+  func      OnPluginStart                            изменён текст, во всех сборках  (разрешено)
+  func      RestrictInit                             изменён текст, во всех сборках  (разрешено)
+  func      RestrictIsDatabaseLoaded                 добавлен или попал в эту сборку, во всех сборках  (разрешено)
+
+ИТОГ: только перенос; незапланированных расхождений нет.
+```
+
+Проверено: скрипт `symbols.py` и чтение. Не компилировалось.

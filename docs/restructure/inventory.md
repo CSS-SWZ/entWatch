@@ -129,10 +129,13 @@ AdminMenuInit()      [ADMIN_MENU] sm_eadmin, сентинелы редактор
 - регистрации команд, куки и хуков событий друг от друга не зависят;
 - куки HUD должна быть зарегистрирована до цикла `OnClientPutInServer` (он читает её через
   `HudOnClientPutInServer`); сентинелы редактора тоже ставятся до цикла;
-- `DatabaseConnect()` не зависит от команд, `ColorsInit()` и событий. Колбэк создания таблиц
-  приходит после завершения `OnPluginStart()`: `Database.Query` потоковый, результат
-  доставляется в основной поток позже. Это поведение SourceMod по памяти, по исходникам
-  в этом процессе не перепроверялось;
+- `DatabaseConnect()` не зависит от команд, `ColorsInit()` и событий. В обычном
+  `OnPluginStart()` колбэк создания таблиц доставляется позже. Это проверено по локальному
+  css-swz/sourcemod (`366cf73ea665d4d0325c9c4b1ccba76c9e1b73b4`, botox edits):
+  `core/logic/smn_database.cpp:870–877`, `core/logic/Database.cpp:391–414,508–551`.
+  SQLite синхронно входит в `ConnectCallBack`, но `DB.Query` ставит CREATE в очередь.
+  Синхронный fallback Query предусмотрен при выгрузке плагина/identity, поэтому утверждение
+  об отсрочке относится к обычному запуску, не ко всем состояниям жизненного цикла;
 - `HudClientReadCookie()` не читает ничего из того, что выставляют `GetClientAuthId`,
   `SDKHook` и `ClientAuth()` в `OnClientPutInServer`.
 

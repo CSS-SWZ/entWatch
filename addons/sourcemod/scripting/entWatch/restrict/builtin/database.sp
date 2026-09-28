@@ -115,3 +115,7 @@ public void SQL_Callback_CheckError(Database hDatabase, DBResultSet results, con
 		return;
 	}
 }
+bool RestrictIsDatabaseLoaded()
+{
+	return DBLoaded;
+}

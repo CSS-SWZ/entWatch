@@ -28,6 +28,7 @@ Restrict Restricts[MAXPLAYERS + 1];
 
 bool LastQueryEBanNotCompleted;
 
+#include "builtin/database.sp"
 #include "builtin/utils.sp"
 #include "builtin/temp.sp"
 #include "builtin/load.sp"
@@ -44,6 +45,8 @@ void RestrictInit()
     RegAdminCmd("sm_uneban",    Command_UnBan,     ADMFLAG_GENERIC);
     RegAdminCmd("sm_addeban",   Command_AddBan,    ADMFLAG_RCON);
     RegAdminCmd("sm_deleban",   Command_DeleteBan, ADMFLAG_RCON);
+
+    DatabaseConnect();
 }
 
 void RestrictOnClientDisconnect(int client)

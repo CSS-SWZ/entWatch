@@ -75,7 +75,7 @@ public any Native_IsConfigLoaded(Handle plugin, int numParams)
 
 public any Native_IsDatabaseLoaded(Handle plugin, int numParams)
 {
-    return DBLoaded;
+    return RestrictIsDatabaseLoaded();
 }
 
 // Индексы приходят из чужих плагинов, поэтому проверяем их здесь: без проверки

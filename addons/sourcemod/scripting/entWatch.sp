@@ -12,7 +12,6 @@
 bool Late;
 
 #include "entWatch/modules.sp"
-#include "entWatch/database.sp"
 #include "entWatch/colors.sp"
 #include "entWatch/config.sp"
 #include "entWatch/items.sp"
@@ -60,7 +59,6 @@ public void OnPluginStart()
     SpawnInit();
     StripperInit();
 
-    DatabaseConnect();
     DumpInit();
     ColorsInit();
 
