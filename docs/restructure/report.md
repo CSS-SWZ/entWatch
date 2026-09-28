@@ -656,3 +656,200 @@ OnClientPutInServer, OnClientDisconnect, OnClientCookiesCached и OnClientSayCom
 ```
 
 Проверено: скрипт `symbols.py` и чтение. Не компилировалось.
+
+## Шаг 5.2 — документация
+
+Обновлён CLAUDE.md на английском: One plugin, many files (include order, modules.sp,
+клиентские делегаты и контракт рестриктов), таблица Subsystems и Database. Непосредственно
+связанные ссылки в Build и Per-map configs теперь указывают на modules.sp и config/parse.sp,
+config/save.sp. Доменные контракты, поведение SQL, планы будущих исправлений и версия
+плагина не изменялись. UTF-8/CRLF и отсутствие финального newline CLAUDE.md сохранены.
+README.md отмечает все этапы выполненными и ссылается на этот отчёт.
+
+Не перенос: только документация, как предусмотрено шагом 5.2. Изменения CLAUDE.md
+подготовлены отдельным агентом и прочитаны основным агентом. Код после проверки 5.1
+не менялся; итоговый сквозной прогон по исходной базе приведён ниже.
+
+Проверено: скрипт `symbols.py` и чтение. Не компилировалось.
+
+## Итоговая сверка кода
+
+Дополнительно к проверке каждого шага выполнено сквозное сравнение итогового кода с
+исходным `2977470` для 64 сочетаний со встроенной системой. Разрешены только новые
+функции/делегаты, оговорённые изменения инициализации, фасада, клиентских форвардов и
+исключение stock ItemFormat без HUD. AdminMenu/Handler в этом прогоне не разрешены к
+изменению: при включённых рестриктах их текст должен совпадать с исходным.
+
+Команда: `python docs/restructure/tools/symbols.py --base 2977470 --fix RESTRICT_BUILTIN=1 --allow OnPluginStart --allow ClientAuth --allow Native_IsDatabaseLoaded --allow RestrictInit --allow OnClientPutInServer --allow OnClientDisconnect --allow ModulesInit --allow RestrictOnClientAuth --allow RestrictIsDatabaseLoaded --allow ClientsOnClientPutInServer --allow ClientsOnClientDisconnect --allow ItemFormat`.
+Код выхода: 0.
+
+```text
+База: 2977470; сравнивается: рабочее дерево; сравнено сборок: 64 (перебор BOTOX_SM, HUD, ASSIST_USE, ADMIN_MENU, HALFZOMBIE, RESTRICT_BUILTIN, _zr_included; зафиксировано RESTRICT_BUILTIN=1)
+
+Перенесены без изменений:
+  func   AdminConfigEditorGet                     entWatch/admin_menu.sp -> entWatch/admin_menu/config_editor.sp
+  func   AdminConfigEditorInit                    entWatch/admin_menu.sp -> entWatch/admin_menu/config_editor.sp
+  func   AdminOnClientPutInServer                 entWatch/admin_menu.sp -> entWatch/admin_menu/config_editor.sp
+  func   AdminOnClientSayCommand                  entWatch/admin_menu.sp -> entWatch/admin_menu/config_editor.sp
+  func   ConfigMenu                               entWatch/admin_menu.sp -> entWatch/admin_menu/config_editor.sp
+  func   ConfigMenu_Handler                       entWatch/admin_menu.sp -> entWatch/admin_menu/config_editor.sp
+  func   ConfigsMenu                              entWatch/admin_menu.sp -> entWatch/admin_menu/config_editor.sp
+  func   ConfigsMenu_Handler                      entWatch/admin_menu.sp -> entWatch/admin_menu/config_editor.sp
+  global EditClientsConfigs                       entWatch/admin_menu.sp -> entWatch/admin_menu/config_editor.sp
+  type   EditClientConfig                         entWatch/admin_menu.sp -> entWatch/admin_menu/config_editor.sp
+  func   TransferByMapMenu                        entWatch/admin_menu.sp -> entWatch/admin_menu/transfer.sp
+  func   TransferByMapMenu_Handler                entWatch/admin_menu.sp -> entWatch/admin_menu/transfer.sp
+  func   TransferByTargetMenu                     entWatch/admin_menu.sp -> entWatch/admin_menu/transfer.sp
+  func   TransferByTargetMenu_Handler             entWatch/admin_menu.sp -> entWatch/admin_menu/transfer.sp
+  func   TransferMenu                             entWatch/admin_menu.sp -> entWatch/admin_menu/transfer.sp
+  func   TransferMenu_Handler                     entWatch/admin_menu.sp -> entWatch/admin_menu/transfer.sp
+  func   UseItemMenu_Handler                      entWatch/admin_menu.sp -> entWatch/admin_menu/use.sp
+  func   UseItemsMenu                             entWatch/admin_menu.sp -> entWatch/admin_menu/use.sp
+  func   AdminConfigBrowseItems                   entWatch/admin_menu.sp -> entWatch/config/save.sp
+  func   AdminConfigSave                          entWatch/admin_menu.sp -> entWatch/config/save.sp
+  func   BanLengthMenu                            entWatch/admin_menu.sp -> entWatch/restrict/builtin/menu.sp
+  func   BanLengthMenu_Handler                    entWatch/admin_menu.sp -> entWatch/restrict/builtin/menu.sp
+  func   BanMenu                                  entWatch/admin_menu.sp -> entWatch/restrict/builtin/menu.sp
+  func   BanMenu_Handler                          entWatch/admin_menu.sp -> entWatch/restrict/builtin/menu.sp
+  func   BannedPlayerMenu                         entWatch/admin_menu.sp -> entWatch/restrict/builtin/menu.sp
+  func   BannedPlayerMenu_Handler                 entWatch/admin_menu.sp -> entWatch/restrict/builtin/menu.sp
+  func   BannedPlayersMenu                        entWatch/admin_menu.sp -> entWatch/restrict/builtin/menu.sp
+  func   BannedPlayersMenu_Handler                entWatch/admin_menu.sp -> entWatch/restrict/builtin/menu.sp
+  func   OnClientCookiesCached                    entWatch/client.sp -> entWatch.sp
+  func   OnClientSayCommand                       entWatch/client.sp -> entWatch.sp
+  define SELECT_BANS                              entWatch/client.sp -> entWatch/restrict/builtin/load.sp
+  func   SQL_Callback_SelectBans                  entWatch/client.sp -> entWatch/restrict/builtin/load.sp
+  func   ConfigBrowse                             entWatch/config.sp -> entWatch/config/parse.sp
+  func   ConfigBrowseKey                          entWatch/config.sp -> entWatch/config/parse.sp
+  func   ConfigBrowseKeyGFL                       entWatch/config.sp -> entWatch/config/parse.sp
+  func   ConfigBrowseKeyUNLOZE                    entWatch/config.sp -> entWatch/config/parse.sp
+  func   ConfigGetType                            entWatch/config.sp -> entWatch/config/parse.sp
+  func   ConfigLoad                               entWatch/config.sp -> entWatch/config/parse.sp
+  func   ConfigParse                              entWatch/config.sp -> entWatch/config/parse.sp
+  define MYSQL_CHARSET                            entWatch/database.sp -> entWatch/restrict/builtin/database.sp
+  func   ConnectCallBack                          entWatch/database.sp -> entWatch/restrict/builtin/database.sp
+  func   DB_Query                                 entWatch/database.sp -> entWatch/restrict/builtin/database.sp
+  func   DatabaseConnect                          entWatch/database.sp -> entWatch/restrict/builtin/database.sp
+  func   SQL_Callback_CheckError                  entWatch/database.sp -> entWatch/restrict/builtin/database.sp
+  func   SQL_Callback_CreateTables                entWatch/database.sp -> entWatch/restrict/builtin/database.sp
+  global DB                                       entWatch/database.sp -> entWatch/restrict/builtin/database.sp
+  global DBLoaded                                 entWatch/database.sp -> entWatch/restrict/builtin/database.sp
+  global SQLite                                   entWatch/database.sp -> entWatch/restrict/builtin/database.sp
+  func   RemoveConfig                             entWatch/helpers.sp -> entWatch/config.sp
+  func   RemoveItemByConfig                       entWatch/helpers.sp -> entWatch/items.sp
+  func   AreEntitiesRelated                       entWatch/helpers.sp -> entWatch/items/register.sp
+  func   UTIL_GetAccountIDFromSteamID             entWatch/helpers.sp -> entWatch/restrict/builtin/utils.sp
+  func   UTIL_GetSteamIDFromAccountID             entWatch/helpers.sp -> entWatch/restrict/builtin/utils.sp
+  func   ItemFormat                               entWatch/items.sp -> entWatch/hud.sp
+  func   ItemProcessCheckButton                   entWatch/items.sp -> entWatch/items/register.sp
+  func   ItemsGetButtonByPriority                 entWatch/items.sp -> entWatch/items/register.sp
+  func   ItemsInitiateItem                        entWatch/items.sp -> entWatch/items/register.sp
+  func   ItemsOnEntitySpawned                     entWatch/items.sp -> entWatch/items/register.sp
+  func   ItemsRegisterGetKeyValues                entWatch/items.sp -> entWatch/items/register.sp
+  func   ItemsRegisterItemEntity                  entWatch/items.sp -> entWatch/items/register.sp
+  func   Timer_ItemFindButton                     entWatch/items.sp -> entWatch/items/register.sp
+  func   ItemFindClientItem                       entWatch/items.sp -> entWatch/items/search.sp
+  func   ItemGetRef                               entWatch/items.sp -> entWatch/items/search.sp
+  func   ItemsGetByButton                         entWatch/items.sp -> entWatch/items/search.sp
+  func   ItemsGetByCompare                        entWatch/items.sp -> entWatch/items/search.sp
+  func   ItemsGetByName                           entWatch/items.sp -> entWatch/items/search.sp
+  func   ItemsGetByRef                            entWatch/items.sp -> entWatch/items/search.sp
+  func   ItemsGetByRelay                          entWatch/items.sp -> entWatch/items/search.sp
+  func   ItemsGetByShortName                      entWatch/items.sp -> entWatch/items/search.sp
+  func   ItemsGetByWeapon                         entWatch/items.sp -> entWatch/items/search.sp
+  func   ItemsGetByWeaponHammerID                 entWatch/items.sp -> entWatch/items/search.sp
+  func   ItemDrop                                 entWatch/items.sp -> entWatch/items/state.sp
+  func   ItemIsReady                              entWatch/items.sp -> entWatch/items/state.sp
+  func   ItemReleaseOwner                         entWatch/items.sp -> entWatch/items/state.sp
+  func   ItemReload                               entWatch/items.sp -> entWatch/items/state.sp
+  func   RestrictClientHasDatabaseRestrict        entWatch/restrict.sp -> entWatch/restrict/builtin.sp
+  func   RestrictClientHasRestrict                entWatch/restrict.sp -> entWatch/restrict/builtin.sp
+  func   RestrictOnClientDisconnect               entWatch/restrict.sp -> entWatch/restrict/builtin.sp
+  global LastQueryEBanNotCompleted                entWatch/restrict.sp -> entWatch/restrict/builtin.sp
+  global Restricts                                entWatch/restrict.sp -> entWatch/restrict/builtin.sp
+  type   Restrict                                 entWatch/restrict.sp -> entWatch/restrict/builtin.sp
+  define INSERT_BAN                               entWatch/restrict.sp -> entWatch/restrict/builtin/ban.sp
+  func   RestrictClientBan                        entWatch/restrict.sp -> entWatch/restrict/builtin/ban.sp
+  func   RestrictClientTempBan                    entWatch/restrict.sp -> entWatch/restrict/builtin/ban.sp
+  func   SQL_Callback_BanClient                   entWatch/restrict.sp -> entWatch/restrict/builtin/ban.sp
+  func   Command_AddBan                           entWatch/restrict.sp -> entWatch/restrict/builtin/commands.sp
+  func   Command_Ban                              entWatch/restrict.sp -> entWatch/restrict/builtin/commands.sp
+  func   Command_DeleteBan                        entWatch/restrict.sp -> entWatch/restrict/builtin/commands.sp
+  func   Command_Status                           entWatch/restrict.sp -> entWatch/restrict/builtin/commands.sp
+  func   Command_UnBan                            entWatch/restrict.sp -> entWatch/restrict/builtin/commands.sp
+  define SELECT_SUMM_BANS                         entWatch/restrict.sp -> entWatch/restrict/builtin/load.sp
+  func   RestrictCacheClientBan                   entWatch/restrict.sp -> entWatch/restrict/builtin/load.sp
+  func   RestrictLoadClientSummBans               entWatch/restrict.sp -> entWatch/restrict/builtin/load.sp
+  func   RestrictSendInfoToAdmins                 entWatch/restrict.sp -> entWatch/restrict/builtin/load.sp
+  func   SQL_Callback_SelectSummBans              entWatch/restrict.sp -> entWatch/restrict/builtin/load.sp
+  define DELETE_BAN_ID                            entWatch/restrict.sp -> entWatch/restrict/builtin/offline.sp
+  define DELETE_BAN_ID_IP                         entWatch/restrict.sp -> entWatch/restrict/builtin/offline.sp
+  define DELETE_BAN_IP                            entWatch/restrict.sp -> entWatch/restrict/builtin/offline.sp
+  define INSERT_ADD_BAN                           entWatch/restrict.sp -> entWatch/restrict/builtin/offline.sp
+  define SELECT_BAN_ID                            entWatch/restrict.sp -> entWatch/restrict/builtin/offline.sp
+  define SELECT_BAN_ID_IP                         entWatch/restrict.sp -> entWatch/restrict/builtin/offline.sp
+  define SELECT_BAN_IP                            entWatch/restrict.sp -> entWatch/restrict/builtin/offline.sp
+  func   RestrictAddBan                           entWatch/restrict.sp -> entWatch/restrict/builtin/offline.sp
+  func   RestrictDeleteBan                        entWatch/restrict.sp -> entWatch/restrict/builtin/offline.sp
+  func   RestrictFormatDeleteQuery                entWatch/restrict.sp -> entWatch/restrict/builtin/offline.sp
+  func   RestrictFormatLookupQuery                entWatch/restrict.sp -> entWatch/restrict/builtin/offline.sp
+  func   SQL_Callback_AddBan                      entWatch/restrict.sp -> entWatch/restrict/builtin/offline.sp
+  func   SQL_Callback_AddBanLookup                entWatch/restrict.sp -> entWatch/restrict/builtin/offline.sp
+  func   SQL_Callback_DeleteBanClient             entWatch/restrict.sp -> entWatch/restrict/builtin/offline.sp
+  func   SQL_Callback_DeleteBanLookup             entWatch/restrict.sp -> entWatch/restrict/builtin/offline.sp
+  define MAX_TEMP_RESTRICTS                       entWatch/restrict.sp -> entWatch/restrict/builtin/temp.sp
+  func   RestrictAddTempRestrict                  entWatch/restrict.sp -> entWatch/restrict/builtin/temp.sp
+  func   RestrictClientInitTemp                   entWatch/restrict.sp -> entWatch/restrict/builtin/temp.sp
+  func   RestrictFindTempRestrict                 entWatch/restrict.sp -> entWatch/restrict/builtin/temp.sp
+  func   RestrictHasTempRestrict                  entWatch/restrict.sp -> entWatch/restrict/builtin/temp.sp
+  func   RestrictOnMapEnd                         entWatch/restrict.sp -> entWatch/restrict/builtin/temp.sp
+  func   RestrictRemoveTempRestrict               entWatch/restrict.sp -> entWatch/restrict/builtin/temp.sp
+  global TempRestricts                            entWatch/restrict.sp -> entWatch/restrict/builtin/temp.sp
+  global TempRestricts_Count                      entWatch/restrict.sp -> entWatch/restrict/builtin/temp.sp
+  define DELETE_BAN                               entWatch/restrict.sp -> entWatch/restrict/builtin/unban.sp
+  func   RestrictClearCacheByBanKey               entWatch/restrict.sp -> entWatch/restrict/builtin/unban.sp
+  func   RestrictClientUnBan                      entWatch/restrict.sp -> entWatch/restrict/builtin/unban.sp
+  func   SQL_Callback_UnBan                       entWatch/restrict.sp -> entWatch/restrict/builtin/unban.sp
+  func   RestrictFormatDuration                   entWatch/restrict.sp -> entWatch/restrict/builtin/utils.sp
+  func   RestrictGetExpireValue                   entWatch/restrict.sp -> entWatch/restrict/builtin/utils.sp
+  func   RestrictIsValidDuration                  entWatch/restrict.sp -> entWatch/restrict/builtin/utils.sp
+  func   RestrictIsValidIP                        entWatch/restrict.sp -> entWatch/restrict/builtin/utils.sp
+
+Расхождения:
+  func      ClientAuth                               изменён текст, во всех сборках  (разрешено)
+  func      ClientsOnClientDisconnect                добавлен или попал в эту сборку, во всех сборках  (разрешено)
+  func      ClientsOnClientPutInServer               добавлен или попал в эту сборку, во всех сборках  (разрешено)
+  func      ItemFormat                               удалён или выпал из этой сборки, в 32 из 64 сборок  (разрешено)
+  func      ModulesInit                              добавлен или попал в эту сборку, во всех сборках  (разрешено)
+  func      Native_IsDatabaseLoaded                  изменён текст, во всех сборках  (разрешено)
+  func      OnClientDisconnect                       изменён текст, во всех сборках  (разрешено)
+  func      OnClientPutInServer                      изменён текст, во всех сборках  (разрешено)
+  func      OnPluginStart                            изменён текст, во всех сборках  (разрешено)
+  func      RestrictInit                             изменён текст, во всех сборках  (разрешено)
+  func      RestrictIsDatabaseLoaded                 добавлен или попал в эту сборку, во всех сборках  (разрешено)
+  func      RestrictOnClientAuth                     добавлен или попал в эту сборку, во всех сборках  (разрешено)
+
+ИТОГ: только перенос; незапланированных расхождений нет.
+```
+
+Независимая точная сверка другим агентом (собственный лексический сканер, без symbols.py):
+
+- Исходные 319 ключей функций/типов/глобальных данных/define → 325: только пять новых
+  функций и RESTRICT_BUILTIN. У прежних символов вне оговорённых восьми изменяемых
+  функций нет отличий текста декларации и тела после нормализации CRLF/LF.
+- Все исходные 274 комментария сохранены; добавлены только десять строк комментариев
+  в modules.sp и контракте restrict.sp. Комментарии шести заглушек none.sp проверены отдельно.
+- Все три публичных include совпадают по Git blob ID с 2977470: entWatch.inc,
+  entWatch/Config.inc и entWatch/Item.inc. Версия myinfo остаётся 1.1.1.
+- Независимое чтение подтвердило состав подсистем, гейты и вызовы жизненного цикла.
+- 37 относительных include-путей существуют с точным регистром имён, нужным на Linux;
+  19 новых (не переименованных) .sp валидны как UTF-8 без BOM.
+- master остался на e6d2630; коммиты выполнялись только в refactor/structure.
+
+Проверено: скрипт `symbols.py` и чтение. Не компилировалось.
+
+Пределы проверки: symbols.py не проверяет типы, сигнатуры внешних native и предупреждения
+компилятора. Компиляция и поведение на CS:S сервере остаются непроверенными. Особенно
+нужна компиляция вариантов RESTRICT_BUILTIN=1/0; в отключённой реализации возможны
+предупреждения о неиспользуемых функциях/параметрах (stock/#if здесь не добавлялись).
+Интеграция RestrictCore, исправления SQL/прочих дефектов и пуш не выполнялись.
