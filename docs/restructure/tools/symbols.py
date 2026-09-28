@@ -36,7 +36,7 @@ LOCAL_INCLUDE = "include"
 
 # Define'ы, которые перебираются. Их собственные #define в исходниках игнорируются:
 # значение задаёт перебор. _zr_included — наличие zombiereloaded.inc (#tryinclude).
-TOGGLES = ["BOTOX_SM", "HUD", "ASSIST_USE", "ADMIN_MENU", "HALFZOMBIE", "RESTRICT_BUILTIN", "_zr_included"]
+TOGGLES = ["BOTOX_SM", "HUD", "ASSIST_USE", "ADMIN_MENU", "HALFZOMBIE", "RESTRICT_BUILTIN", "RESTRICT_CORE", "_zr_included"]
 
 
 # --------------------------------------------------------------------------- чтение

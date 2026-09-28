@@ -38,6 +38,20 @@ bool LastQueryEBanNotCompleted;
 #include "builtin/commands.sp"
 #include "builtin/menu.sp"
 
+void RestrictOnAllPluginsLoaded()
+{
+}
+
+void RestrictOnLibraryAdded(const char[] name)
+{
+    #pragma unused name
+}
+
+void RestrictOnLibraryRemoved(const char[] name)
+{
+    #pragma unused name
+}
+
 void RestrictInit()
 {
     RegConsoleCmd("sm_status", Command_Status);

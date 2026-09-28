@@ -4,9 +4,12 @@
 #define ADMIN_MENU
 #define HALFZOMBIE
 
-// Встроенная система рестриктов: своя база ebans и временные рестрикты.
-// Без define рестриктов нет (restrict/none.sp).
-#define RESTRICT_BUILTIN
+// Рестрикты - не больше одного define. Без обоих рестриктов нет (restrict/none.sp).
+// Встроенная система: своя база ebans и временные рестрикты (restrict/builtin.sp).
+//#define RESTRICT_BUILTIN
+
+// Рестрикты из ядра RestrictCore, вид entwatch.pickup (restrict/core.sp).
+#define RESTRICT_CORE
 
 void ModulesInit()
 {

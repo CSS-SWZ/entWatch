@@ -7,7 +7,7 @@ repository.
 
 **entWatch** — a SourceMod plugin for **CS:S zombie-escape servers** that takes control of the
 map's *special items* (a.k.a. "materia"). Repository `CSS-SWZ/entWatch`, version lives in
-`myinfo` in `entWatch.sp` (currently `1.1.2`).
+`myinfo` in `entWatch.sp` (currently `1.2.0`).
 
 A *special item* is a map-placed weapon (usually a pistol; a knife for zombies and for some
 human items) wired to map entities: an invisible `func_button`, a `trigger_*`, and optionally
@@ -17,7 +17,8 @@ human items) wired to map entities: an invisible `func_button`, a `trigger_*`, a
 - **blocks non-owners from firing the item** — the original reason this plugin exists;
 - enforces cooldowns / limited uses / charges, staying in sync with the map's own logic;
 - announces pick / drop / use in team chat and shows a live HUD of items and owners;
-- restricts ("ebans") players from taking items at all, persisted in a database;
+- restricts ("ebans") players from taking items at all — through the RestrictCore plugin in
+  production, or through its own database (build-time choice, see `modules.sp`);
 - exposes an API (natives + forwards) that other plugins on the server already consume.
 
 The plugin is deliberately **format-universal**: it reads the per-map configs of both the *GFL*
@@ -50,13 +51,18 @@ Because the plugin is mature and live, these are conditions, not preferences.
 
 ## Target environment
 
-- **Game: CS:S only.** The Protobuf branch in `entWatch/chat.sp` (`SendMessage()`) is dead code
-  and is scheduled for removal — CS:GO is not a target.
+- **Game: CS:S only.** CS:GO is not a target; the Protobuf branch of `SendMessage()` in
+  `entWatch/chat.sp` has been removed.
 - Server runs **BotoX's SourceMod 1.13 fork** (build 7214). `#define BOTOX_SM` in `entWatch.sp`
   selects the production path (`OnEntitySpawned`). The `#else` path (`OnEntityCreated` +
   `SDKHook_SpawnPost`) exists for stock SourceMod and must keep compiling.
 - Optional dependency: **zombiereloaded** (the SWZ-edition fork, `C:\develop\sg-zr-swzedition`),
   pulled via `#tryinclude` in the `HALFZOMBIE` module only.
+- Optional dependency: **RestrictCore** (`C:\css-development\projects\RestrictCore`), the
+  restriction core, used by the `RESTRICT_CORE` build. `RestrictCore.inc` comes from
+  `C:\css-development\dependencies\sm-includes` (pass it with `-i` when building); it is
+  included with `REQUIRE_PLUGIN` undefined, so the plugin itself is optional at run time.
+  entWatch reads the type `entwatch.pickup`.
 - `clientprefs` (HUD toggle cookie), `sdkhooks`, `sdktools`.
 
 ## Build
@@ -64,18 +70,20 @@ Because the plugin is mature and live, these are conditions, not preferences.
 No build script; the plugin is compiled manually. **The user compiles — do not run `spcomp`
 unless explicitly asked.** Entry point `addons/sourcemod/scripting/entWatch.sp`, output
 `entWatch.smx`; the plugin's own includes live in `scripting/include`, so the include path must
-be passed:
+be passed, plus the shared includes for `RestrictCore.inc` in the `RESTRICT_CORE` build:
 
 ```
-spcomp -i"addons/sourcemod/scripting/include" addons/sourcemod/scripting/entWatch.sp
+spcomp -i"addons/sourcemod/scripting/include" -i"C:\css-development\dependencies\sm-includes" addons/sourcemod/scripting/entWatch.sp
 ```
 
 There are no tests. Verification = clean compile, then testing on the live server.
 
-Feature `#define`s in `entWatch/modules.sp` — `HUD`, `ASSIST_USE`, `ADMIN_MENU`, `HALFZOMBIE`,
-`RESTRICT_BUILTIN` — are all enabled in production, but they exist so subsystems *can* be switched
-off. Without `RESTRICT_BUILTIN`, the restrict facade selects its no-restrict implementation.
-When touching a gated module, keep both builds (gate on and off) compiling warning-free.
+Feature `#define`s in `entWatch/modules.sp` — `HUD`, `ASSIST_USE`, `ADMIN_MENU`, `HALFZOMBIE` —
+are all enabled in production, but they exist so subsystems *can* be switched off. The restrict
+source is chosen there too: `RESTRICT_CORE` (production) or `RESTRICT_BUILTIN`, at most one —
+`restrict.sp` stops the build with `#error` if both are defined; with neither, nobody is
+restricted. When touching a gated module, keep both builds (gate on and off) compiling
+warning-free.
 
 ## Git / workflow
 
@@ -121,12 +129,19 @@ order is: `modules.sp`, `colors.sp`, `config.sp`, `items.sp`, `client.sp`, `chat
 `config/save.sp`; `items.sp` declares `Items[]` before including `items/register.sp`,
 `items/search.sp` and `items/state.sp`.
 
-`restrict.sp` is the facade: it includes `restrict/builtin.sp` when `RESTRICT_BUILTIN` is defined,
-or `restrict/none.sp` otherwise. Both implementations provide six functions:
-`RestrictInit()` (commands and storage), `RestrictOnClientAuth()` (authorization and loaded
-notification), `RestrictOnClientDisconnect()` (slot cleanup), `RestrictOnMapEnd()` (map cleanup),
+`restrict.sp` is the facade: it includes `restrict/core.sp` (`RESTRICT_CORE`),
+`restrict/builtin.sp` (`RESTRICT_BUILTIN`) or `restrict/none.sp`. Every implementation provides the
+functions listed in the header of `restrict.sp`: `RestrictInit()` (commands and storage),
+`RestrictOnAllPluginsLoaded()`, `RestrictOnLibraryAdded()` / `RestrictOnLibraryRemoved()`
+(dependencies on other plugins), `RestrictOnClientAuth()` (authorization and loaded notification),
+`RestrictOnClientDisconnect()` (slot cleanup), `RestrictOnMapEnd()` (map cleanup),
 `RestrictClientHasRestrict()` (fast gameplay check) and `RestrictIsDatabaseLoaded()` (public
-native state). Other modules use this contract instead of the built-in implementation's data.
+native state). Other modules use this contract instead of an implementation's data.
+
+`restrict/core.sp` authorizes a client immediately in `RestrictOnClientAuth()` — it does **not**
+wait for `RCOnClientReady`, which never comes while RestrictCore or its database is unavailable —
+and keeps a per-client flag from `RC_IsRestricted()` (read at auth if the core already has the
+data, then on `RCOnClientReady`), `RCOnRestrictChanged` and library removal (fail-open).
 
 Late load is handled with the global `Late` flag (set in `AskPluginLoad2`, cleared at the end of
 `OnMapStart`); it lets `ItemsRegisterItemEntity()` adopt weapons that already have an owner.
@@ -231,12 +246,13 @@ These are the non-obvious contracts. Do not "clean them up" without understandin
 | `entWatch/items/state.sp` | ownership, drop, readiness and reload |
 | `entWatch/sdkhook.sp` | all gameplay hooks: pickup/drop/touch, button press, compare/relay outputs |
 | `entWatch/client.sp` | `Clients[]`, client delegates, per-client hooks and `ClientAuth()`; calls the restrict facade for auth |
-| `entWatch/restrict.sp` | six-function restrict contract; selects built-in or no-restrict implementation |
+| `entWatch/restrict.sp` | restrict contract; selects the RestrictCore, built-in or no-restrict implementation |
+| `entWatch/restrict/core.sp` | restrictions from RestrictCore (`RESTRICT_CORE`), type `entwatch.pickup` |
 | `entWatch/restrict/builtin.sp` | built-in restrict state and facade functions; includes `builtin/` |
 | `entWatch/restrict/builtin/database.sp` | connection (`databases.cfg` block `entwatch`, else SQLite), schema, `DB_Query()` |
 | `entWatch/restrict/builtin/{temp,load,ban,unban,offline}.sp` | temporary restricts, auth load, online/offline ban and unban flows |
 | `entWatch/restrict/builtin/{commands,menu,utils}.sp` | restrict commands, admin menu (`ADMIN_MENU`), validation and Steam ID helpers |
-| `entWatch/restrict/none.sp` | no-restrict contract implementation when `RESTRICT_BUILTIN` is off |
+| `entWatch/restrict/none.sp` | no-restrict contract implementation when neither restrict define is set |
 | `entWatch/hud.sp` | `KeyHintText` HUD, 1 s timer, per-team paged buffers, `sm_hud` cookie, item line formatting |
 | `entWatch/chat.sp` | team-scoped announcements, `SayText2` wrapper, colour tags |
 | `entWatch/colors.sp` | `configs/entwatch/colors.cfg` + named-colour → hex map |
@@ -269,16 +285,15 @@ Per-client visibility is a `clientprefs` cookie (`entwatch_display`, `sm_hud`).
 
 ## Database
 
-The built-in implementation is in `entWatch/restrict/builtin/database.sp` and is included when
-`RESTRICT_BUILTIN` is enabled in `entWatch/modules.sp`. Without it, `entWatch/restrict/none.sp`
-provides the facade with no database. Table `ebans` is created on connect. MySQL if
+Production restrictions come from RestrictCore, which owns its own database; entWatch then has
+no database at all. The section below applies to the built-in implementation only
+(`RESTRICT_BUILTIN`, `entWatch/restrict/builtin/database.sp`). Table `ebans` is created on connect. MySQL if
 `databases.cfg` has an `entwatch` block, otherwise SQLite (`SQLite_UseDatabase("entwatch")`).
 
 - The table is currently owned by this plugin alone; a web panel is planned, so the schema may be
   **changed freely** — there is no legacy to preserve. A normalized, properly indexed schema is
   wanted.
-- **Threaded queries only.** `RestrictAddBan()` / `RestrictDeleteBan()` currently do a blocking
-  `SQL_LockDatabase` + `SQL_Query` on the main thread — this is a defect to fix, not a compromise.
+- **Threaded queries only.** Blocking SQL was removed in `1.0.3`; keep every query threaded.
 - Restricts are matched by both Steam account ID and IP.
 - **No database → no restricts** (fail-open) is intended behaviour.
 
@@ -292,13 +307,16 @@ API.
 
 ## Commands
 
+`sm_status`, `sm_eban`, `sm_uneban`, `sm_addeban` and `sm_deleban` exist only in the
+`RESTRICT_BUILTIN` build; with RestrictCore, restrictions are managed through its commands.
+
 | Command | Access | Purpose |
 |---|---|---|
 | `sm_status [target]` | all | own/target restrict status |
 | `sm_hud` | all | toggle the HUD (saved in a cookie) |
 | `sm_eban <target> <minutes>` / `sm_uneban <target>` | `generic` | restrict / unrestrict an online player |
 | `sm_addeban <minutes> [steamid] [ip]` / `sm_deleban [steamid] [ip]` | `rcon` | offline restrict management |
-| `sm_eadmin` | `generic` | admin menu (ebans, transfer, forced use, config editor) |
+| `sm_eadmin` | `generic` | admin menu (ebans — built-in only, transfer, forced use, config editor) |
 | `sm_etransfer <owner\|$item> <receiver>` | `generic` | transfer an item |
 | `sm_espawn <shortname> [receiver]` | `ban` | spawn an item from its `point_template` |
 | `sm_euse <owner\|$item>` | `ban` | force-use someone's item |
@@ -310,11 +328,10 @@ API.
 
 Decided; do not undo or re-litigate these:
 
-- Remove the Protobuf path in `chat.sp` (CS:S only).
-- Make every query asynchronous; eliminate blocking SQL.
-- Redesign the `ebans` schema — normalized, indexed, suitable for a web panel.
-- Add **map-only (temporary) restricts** that work without a database, so restricting still works
-  when the DB is down.
+- Production restrictions live in RestrictCore; the built-in implementation stays buildable
+  (`RESTRICT_BUILTIN`) so the server can go back to it.
+- Redesign the `ebans` schema — normalized, indexed, suitable for a web panel (built-in
+  implementation only).
 - Continue the gradual restyle towards `~/.claude/rules/sourcepawn.md`.
 - A deep, multi-axis audit is planned (entity lifecycle, item sync, anti-cheat surfaces, game
   time, database). Correctness under adversarial player behaviour is the priority.

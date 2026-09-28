@@ -35,7 +35,7 @@ public Plugin myinfo =
     name = "entWatch",
     author = "hEl",
     description = "Provides useful features with map items",
-    version = "1.1.2",
+    version = "1.2.0",
     url = "https://github.com/CSS-SWZ/entWatch"
 };
 
@@ -47,6 +47,21 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
     RegPluginLibrary("entWatch");
 
     return APLRes_Success;
+}
+
+public void OnLibraryAdded(const char[] name)
+{
+    RestrictOnLibraryAdded(name);
+}
+
+public void OnLibraryRemoved(const char[] name)
+{
+    RestrictOnLibraryRemoved(name);
+}
+
+public void OnAllPluginsLoaded()
+{
+    RestrictOnAllPluginsLoaded();
 }
 
 public void OnPluginStart()

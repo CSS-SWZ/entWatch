@@ -31,13 +31,13 @@ void APIOnConfigLoaded()
     Call_Finish();
 }
 
-void APIOnDatabaseLoaded()
+stock void APIOnDatabaseLoaded()
 {
     Call_StartForward(g_OnDatabaseLoaded);
     Call_Finish();
 }
 
-void APIOnClientLoaded(int client)
+stock void APIOnClientLoaded(int client)
 {
     Call_StartForward(g_OnClientLoaded);
     Call_PushCell(client);

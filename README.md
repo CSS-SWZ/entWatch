@@ -11,7 +11,8 @@ entWatch binds those entities by Hammer ID and then owns the item's lifecycle.
 - **Ownership protection.** Only the player actually holding the item can fire it.
 - **Cooldowns, limited uses and charges**, kept in step with the map's own logic.
 - **Live HUD** of every item and its owner, plus team-scoped chat announcements.
-- **Restrictions** ("ebans") that stop a player from taking items at all.
+- **Restrictions** ("ebans") that stop a player from taking items at all — from the RestrictCore
+  plugin or from entWatch's own database, chosen at build time.
 - **Admin tools**: transfer an item, force a use, spawn an item, edit the map config in game.
 - **API** — natives and forwards for other plugins on the server.
 
@@ -300,7 +301,24 @@ every path at once:
 
 The same applies to zombiereloaded "half-zombie" classes when that integration is compiled in.
 
-### Two kinds of restriction
+Where restrictions come from is a build-time choice (see
+[Optional subsystems](#optional-subsystems)): the RestrictCore plugin (`RESTRICT_CORE`, the
+shipped build), entWatch's own database (`RESTRICT_BUILTIN`), or none at all.
+
+### RestrictCore
+
+entWatch reads the restriction type `entwatch.pickup`; RestrictCore stores it and provides the
+commands and menus to grant and lift it. The type must be declared in RestrictCore's
+`configs/restricts/types.cfg` (it is in the shipped one). A grant, lift or expiry takes effect
+immediately, and the state survives a map change.
+
+RestrictCore is optional at run time. While it is not loaded — or has not loaded a player's data
+yet, for example because its database is down — that player counts as unrestricted and can take
+items. A server whose restriction core is unavailable should still be playable.
+
+### Built-in restrictions
+
+#### Two kinds of restriction
 
 **Database-backed.** `sm_eban <player> <minutes>` for an online player, `sm_addeban` for someone
 who is not connected. Matched by both Steam account ID and IP, so a reconnect or a name change
@@ -315,7 +333,7 @@ without touching the database.
 **No database means no restrictions.** If the connection fails, restriction checks pass everyone
 — an item server that cannot reach its database should still be playable.
 
-### Storage
+#### Storage
 
 Table `ebans`, created on connect. MySQL is used when `databases.cfg` contains an `entwatch`
 block; otherwise the plugin falls back to SQLite.
@@ -336,7 +354,8 @@ block; otherwise the plugin falls back to SQLite.
 
 ## Admin menu and the live config editor
 
-`sm_eadmin` opens the admin menu: restrictions, item transfer, forced use, and the config editor.
+`sm_eadmin` opens the admin menu: restrictions (built-in restrictions only), item transfer,
+forced use, and the config editor.
 
 The editor changes `Configs[]` in place — the item you are editing reacts immediately — and can
 write the result back to `addons/sourcemod/configs/entwatch/<mapname>.cfg`. It saves each block
@@ -396,12 +415,16 @@ before the item exists; `sm_decuses` addresses a *live* item and needs one on th
 `$shortname` addresses an item directly instead of naming its owner — useful when the item is
 lying on the floor.
 
+`sm_status`, `sm_eban`, `sm_uneban`, `sm_addeban` and `sm_deleban` exist only with built-in
+restrictions (`RESTRICT_BUILTIN`). With RestrictCore, restrictions are managed through its own
+commands.
+
 ---
 
 ## Optional subsystems
 
-Five subsystems are compile-time switches in `addons/sourcemod/scripting/entWatch/modules.sp`.
-All are on in the shipped build; each can be turned off without affecting the rest.
+The subsystems are compile-time switches in `addons/sourcemod/scripting/entWatch/modules.sp`;
+each can be turned off without affecting the rest. All four below are on in the shipped build.
 
 | Switch | What it adds |
 |---|---|
@@ -409,7 +432,15 @@ All are on in the shipped build; each can be turned off without affecting the re
 | `ASSIST_USE` | assisted button pressing, `sm_assistuse`, `sm_euse` |
 | `ADMIN_MENU` | `sm_eadmin` and the live config editor |
 | `HALFZOMBIE` | zombiereloaded integration: half-zombie classes may not hold items |
-| `RESTRICT_BUILTIN` | built-in restrictions: the `ebans` database, temporary restrictions, `sm_eban` / `sm_uneban` / `sm_addeban` / `sm_deleban` / `sm_status`, and restriction menus in `sm_eadmin`. Without it, there are no restrictions and `entWatch_IsDatabaseLoaded` returns `false`. |
+
+The source of restrictions takes **at most one** switch; defining both stops the build. The
+shipped build uses `RESTRICT_CORE`.
+
+| Switch | Restrictions come from |
+|---|---|
+| `RESTRICT_CORE` | the RestrictCore plugin, type `entwatch.pickup`. Needs `RestrictCore.inc` to build; the plugin itself is optional at run time. |
+| `RESTRICT_BUILTIN` | entWatch's own `ebans` database and temporary restrictions, with `sm_eban` / `sm_uneban` / `sm_addeban` / `sm_deleban` / `sm_status` and the restriction menus in `sm_eadmin`. |
+| neither | nowhere — nobody is restricted. |
 
 **Assisted use** is worth a note. Pressing `+USE` does not reliably activate an item — the
 crosshair may land on a wall, or the button may need a jump to line up. With this subsystem the
@@ -450,6 +481,14 @@ tick, and when the player is carrying more than one item.
 | `entWatch_OnClientItemUse(int client, int item)` | an item was used |
 | `entWatch_OnClientItemDrop(int client, int item)` | an item left its owner — dropped, died, disconnected, or transferred |
 | `entWatch_OnClientItemPickup(int client, int item)` | an item was picked up |
+
+The "database" and "client loaded" natives and forwards depend on the source of restrictions:
+
+| | `RESTRICT_BUILTIN` | `RESTRICT_CORE` | neither |
+|---|---|---|---|
+| `entWatch_IsDatabaseLoaded()` | the `ebans` database is ready | RestrictCore is loaded | `false` |
+| `entWatch_OnDatabaseLoaded()` | once the database is ready | never | never |
+| `entWatch_IsClientLoaded()` / `entWatch_OnClientLoaded()` | after the client's restriction lookup (no forward while the database is down) | as soon as the client joins | loaded on join, no forward |
 
 ### Structures
 
