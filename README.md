@@ -400,8 +400,8 @@ lying on the floor.
 
 ## Optional subsystems
 
-Four subsystems are compile-time switches. All are on in the shipped build; each can be turned
-off without affecting the rest.
+Five subsystems are compile-time switches in `addons/sourcemod/scripting/entWatch/modules.sp`.
+All are on in the shipped build; each can be turned off without affecting the rest.
 
 | Switch | What it adds |
 |---|---|
@@ -409,6 +409,7 @@ off without affecting the rest.
 | `ASSIST_USE` | assisted button pressing, `sm_assistuse`, `sm_euse` |
 | `ADMIN_MENU` | `sm_eadmin` and the live config editor |
 | `HALFZOMBIE` | zombiereloaded integration: half-zombie classes may not hold items |
+| `RESTRICT_BUILTIN` | built-in restrictions: the `ebans` database, temporary restrictions, `sm_eban` / `sm_uneban` / `sm_addeban` / `sm_deleban` / `sm_status`, and restriction menus in `sm_eadmin`. Without it, there are no restrictions and `entWatch_IsDatabaseLoaded` returns `false`. |
 
 **Assisted use** is worth a note. Pressing `+USE` does not reliably activate an item — the
 crosshair may land on a wall, or the button may need a jump to line up. With this subsystem the

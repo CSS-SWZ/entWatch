@@ -7,7 +7,7 @@ repository.
 
 **entWatch** — a SourceMod plugin for **CS:S zombie-escape servers** that takes control of the
 map's *special items* (a.k.a. "materia"). Repository `CSS-SWZ/entWatch`, version lives in
-`myinfo` in `entWatch.sp` (currently `1.0.1`).
+`myinfo` in `entWatch.sp` (currently `1.1.2`).
 
 A *special item* is a map-placed weapon (usually a pistol; a knife for zombies and for some
 human items) wired to map entities: an invisible `func_button`, a `trigger_*`, and optionally
