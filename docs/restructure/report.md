@@ -511,3 +511,25 @@ database.sp целиком перенесён в restrict/builtin/database.sp; �
 ```
 
 Проверено: скрипт `symbols.py` и чтение. Не компилировалось.
+
+## Шаг 3.2
+
+AdminConfigSave и AdminConfigBrowseItems перенесены из admin_menu.sp в config/save.sp с ADMIN_MENU-гейтом. config.sp подключает save.sp после своих define и глобальных данных; имена функций и формат записи конфигов сохранены.
+
+Не перенос: Нет.
+
+Наблюдения: Незапланированных изменений не обнаружено.
+
+Проверка: `python docs/restructure/tools/symbols.py `; код 0.
+
+```text
+База: HEAD; сравнивается: рабочее дерево; сравнено сборок: 128 (перебор BOTOX_SM, HUD, ASSIST_USE, ADMIN_MENU, HALFZOMBIE, RESTRICT_BUILTIN, _zr_included)
+
+Перенесены без изменений:
+  func   AdminConfigBrowseItems                   entWatch/admin_menu.sp -> entWatch/config/save.sp
+  func   AdminConfigSave                          entWatch/admin_menu.sp -> entWatch/config/save.sp
+
+ИТОГ: только перенос; незапланированных расхождений нет.
+```
+
+Проверено: скрипт `symbols.py` и чтение. Не компилировалось.

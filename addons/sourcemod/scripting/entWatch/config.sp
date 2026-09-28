@@ -32,6 +32,8 @@
 int Configs_Count;
 Config Configs[MAX_CONFIGS];
 
+#include "config/save.sp"
+
 void ConfigOnMapStart()
 {
     ConfigClearAll();
