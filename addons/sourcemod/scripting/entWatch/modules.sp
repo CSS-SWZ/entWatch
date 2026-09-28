@@ -4,6 +4,10 @@
 #define ADMIN_MENU
 #define HALFZOMBIE
 
+// Встроенная система рестриктов: своя база ebans и временные рестрикты.
+// Без define рестриктов нет (restrict/none.sp).
+#define RESTRICT_BUILTIN
+
 void ModulesInit()
 {
     #if defined HUD

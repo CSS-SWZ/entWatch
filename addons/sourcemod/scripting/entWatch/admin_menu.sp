@@ -30,11 +30,13 @@ void AdminMenu(int client)
 	Menu menu = new Menu(AdminMenu_Handler, MenuAction_End | MenuAction_Select);
 	menu.SetTitle("%t", "Admin title");
 	
+	#if defined RESTRICT_BUILTIN
 	if(flags & (ADMFLAG_BAN | ADMFLAG_RCON | ADMFLAG_ROOT))
 	{
 		AddMenuItem2(menu, _, "eban", "%t", "Ban item");
 		AddMenuItem2(menu, _, "vieweban", "%t", "Banned players item");
 	}
+	#endif
 	AddMenuItem2(menu, _, "transfer", "%t", "Transfer item");
 	#if defined ASSIST_USE
 	if(flags & (ADMFLAG_BAN | ADMFLAG_RCON | ADMFLAG_ROOT))
@@ -66,6 +68,7 @@ public int AdminMenu_Handler(Menu menu, MenuAction action, int client, int index
 			menu.GetItem(index, buffer, 4);
 			switch(buffer[0])
 			{
+				#if defined RESTRICT_BUILTIN
 				case 'e':
 				{
 					BanMenu(client);
@@ -74,6 +77,7 @@ public int AdminMenu_Handler(Menu menu, MenuAction action, int client, int index
 				{
 					BannedPlayersMenu(client);
 				}
+				#endif
 				case 't':
 				{
 					TransferMenu(client);

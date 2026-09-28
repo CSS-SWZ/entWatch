@@ -277,3 +277,199 @@ database.sp целиком перенесён в restrict/builtin/database.sp; �
 ```
 
 Проверено: скрипт `symbols.py` и чтение. Не компилировалось.
+
+## Шаг 2.7
+
+Введён выбор встроенной реализации или отсутствия рестриктов; builtin остаётся включён по умолчанию.
+
+Не перенос: RESTRICT_BUILTIN с комментарием в modules.sp; контракт и #if выбора в restrict.sp; шесть функций none.sp по target.md; #if RESTRICT_BUILTIN вокруг eban/vieweban и case e/v. В новой RestrictIsDatabaseLoaded добавлен пустой разделитель перед функцией, без правки её текста.
+
+Наблюдения: ON: 64 сочетания, exit 0 без allow. OFF: 64 сочетания, ожидаемый exit 1 с 78 различиями; вручную и по объявлениям сверены ровно 70 исключённых builtin-символов, шесть функций контракта и две функции AdminMenu/Handler. Ошибок порядка и отсутствующих символов нет. Уточнено противоречие plan.md: две функции меню вне restrict/ меняются по прямому требованию шага. symbols.py не изменялся. Требуется пользовательская компиляция с включённым и выключенным RESTRICT_BUILTIN; предупреждения компилятора не проверены.
+
+Проверка: `python docs/restructure/tools/symbols.py --fix RESTRICT_BUILTIN=1`; код 0.
+
+```text
+База: HEAD; сравнивается: рабочее дерево; сравнено сборок: 64 (перебор BOTOX_SM, HUD, ASSIST_USE, ADMIN_MENU, HALFZOMBIE, RESTRICT_BUILTIN, _zr_included; зафиксировано RESTRICT_BUILTIN=1)
+
+ИТОГ: только перенос; незапланированных расхождений нет.
+```
+
+Проверка: `python docs/restructure/tools/symbols.py --fix RESTRICT_BUILTIN=0 --verbose`; код 1.
+
+```text
+База: HEAD; сравнивается: рабочее дерево; сравнено сборок: 64 (перебор BOTOX_SM, HUD, ASSIST_USE, ADMIN_MENU, HALFZOMBIE, RESTRICT_BUILTIN, _zr_included; зафиксировано RESTRICT_BUILTIN=0)
+
+Расхождения:
+  func      AdminMenu                                изменён текст, в 32 из 64 сборок
+            {ADMIN_MENU}
+            {ADMIN_MENU, _zr_included}
+            {ADMIN_MENU, HALFZOMBIE}
+            {ADMIN_MENU, HALFZOMBIE, _zr_included}
+            {ASSIST_USE, ADMIN_MENU}
+            {ASSIST_USE, ADMIN_MENU, _zr_included}
+            {ASSIST_USE, ADMIN_MENU, HALFZOMBIE}
+            {ASSIST_USE, ADMIN_MENU, HALFZOMBIE, _zr_included}
+            … ещё 24
+  func      AdminMenu_Handler                        изменён текст, в 32 из 64 сборок
+            {ADMIN_MENU}
+            {ADMIN_MENU, _zr_included}
+            {ADMIN_MENU, HALFZOMBIE}
+            {ADMIN_MENU, HALFZOMBIE, _zr_included}
+            {ASSIST_USE, ADMIN_MENU}
+            {ASSIST_USE, ADMIN_MENU, _zr_included}
+            {ASSIST_USE, ADMIN_MENU, HALFZOMBIE}
+            {ASSIST_USE, ADMIN_MENU, HALFZOMBIE, _zr_included}
+            … ещё 24
+  func      BanLengthMenu                            удалён или выпал из этой сборки, в 32 из 64 сборок
+            {ADMIN_MENU}
+            {ADMIN_MENU, _zr_included}
+            {ADMIN_MENU, HALFZOMBIE}
+            {ADMIN_MENU, HALFZOMBIE, _zr_included}
+            {ASSIST_USE, ADMIN_MENU}
+            {ASSIST_USE, ADMIN_MENU, _zr_included}
+            {ASSIST_USE, ADMIN_MENU, HALFZOMBIE}
+            {ASSIST_USE, ADMIN_MENU, HALFZOMBIE, _zr_included}
+            … ещё 24
+  func      BanLengthMenu_Handler                    удалён или выпал из этой сборки, в 32 из 64 сборок
+            {ADMIN_MENU}
+            {ADMIN_MENU, _zr_included}
+            {ADMIN_MENU, HALFZOMBIE}
+            {ADMIN_MENU, HALFZOMBIE, _zr_included}
+            {ASSIST_USE, ADMIN_MENU}
+            {ASSIST_USE, ADMIN_MENU, _zr_included}
+            {ASSIST_USE, ADMIN_MENU, HALFZOMBIE}
+            {ASSIST_USE, ADMIN_MENU, HALFZOMBIE, _zr_included}
+            … ещё 24
+  func      BanMenu                                  удалён или выпал из этой сборки, в 32 из 64 сборок
+            {ADMIN_MENU}
+            {ADMIN_MENU, _zr_included}
+            {ADMIN_MENU, HALFZOMBIE}
+            {ADMIN_MENU, HALFZOMBIE, _zr_included}
+            {ASSIST_USE, ADMIN_MENU}
+            {ASSIST_USE, ADMIN_MENU, _zr_included}
+            {ASSIST_USE, ADMIN_MENU, HALFZOMBIE}
+            {ASSIST_USE, ADMIN_MENU, HALFZOMBIE, _zr_included}
+            … ещё 24
+  func      BanMenu_Handler                          удалён или выпал из этой сборки, в 32 из 64 сборок
+            {ADMIN_MENU}
+            {ADMIN_MENU, _zr_included}
+            {ADMIN_MENU, HALFZOMBIE}
+            {ADMIN_MENU, HALFZOMBIE, _zr_included}
+            {ASSIST_USE, ADMIN_MENU}
+            {ASSIST_USE, ADMIN_MENU, _zr_included}
+            {ASSIST_USE, ADMIN_MENU, HALFZOMBIE}
+            {ASSIST_USE, ADMIN_MENU, HALFZOMBIE, _zr_included}
+            … ещё 24
+  func      BannedPlayerMenu                         удалён или выпал из этой сборки, в 32 из 64 сборок
+            {ADMIN_MENU}
+            {ADMIN_MENU, _zr_included}
+            {ADMIN_MENU, HALFZOMBIE}
+            {ADMIN_MENU, HALFZOMBIE, _zr_included}
+            {ASSIST_USE, ADMIN_MENU}
+            {ASSIST_USE, ADMIN_MENU, _zr_included}
+            {ASSIST_USE, ADMIN_MENU, HALFZOMBIE}
+            {ASSIST_USE, ADMIN_MENU, HALFZOMBIE, _zr_included}
+            … ещё 24
+  func      BannedPlayerMenu_Handler                 удалён или выпал из этой сборки, в 32 из 64 сборок
+            {ADMIN_MENU}
+            {ADMIN_MENU, _zr_included}
+            {ADMIN_MENU, HALFZOMBIE}
+            {ADMIN_MENU, HALFZOMBIE, _zr_included}
+            {ASSIST_USE, ADMIN_MENU}
+            {ASSIST_USE, ADMIN_MENU, _zr_included}
+            {ASSIST_USE, ADMIN_MENU, HALFZOMBIE}
+            {ASSIST_USE, ADMIN_MENU, HALFZOMBIE, _zr_included}
+            … ещё 24
+  func      BannedPlayersMenu                        удалён или выпал из этой сборки, в 32 из 64 сборок
+            {ADMIN_MENU}
+            {ADMIN_MENU, _zr_included}
+            {ADMIN_MENU, HALFZOMBIE}
+            {ADMIN_MENU, HALFZOMBIE, _zr_included}
+            {ASSIST_USE, ADMIN_MENU}
+            {ASSIST_USE, ADMIN_MENU, _zr_included}
+            {ASSIST_USE, ADMIN_MENU, HALFZOMBIE}
+            {ASSIST_USE, ADMIN_MENU, HALFZOMBIE, _zr_included}
+            … ещё 24
+  func      BannedPlayersMenu_Handler                удалён или выпал из этой сборки, в 32 из 64 сборок
+            {ADMIN_MENU}
+            {ADMIN_MENU, _zr_included}
+            {ADMIN_MENU, HALFZOMBIE}
+            {ADMIN_MENU, HALFZOMBIE, _zr_included}
+            {ASSIST_USE, ADMIN_MENU}
+            {ASSIST_USE, ADMIN_MENU, _zr_included}
+            {ASSIST_USE, ADMIN_MENU, HALFZOMBIE}
+            {ASSIST_USE, ADMIN_MENU, HALFZOMBIE, _zr_included}
+            … ещё 24
+  func      Command_AddBan                           удалён или выпал из этой сборки, во всех сборках
+  func      Command_Ban                              удалён или выпал из этой сборки, во всех сборках
+  func      Command_DeleteBan                        удалён или выпал из этой сборки, во всех сборках
+  func      Command_Status                           удалён или выпал из этой сборки, во всех сборках
+  func      Command_UnBan                            удалён или выпал из этой сборки, во всех сборках
+  func      ConnectCallBack                          удалён или выпал из этой сборки, во всех сборках
+  global    DB                                       удалён или выпал из этой сборки, во всех сборках
+  global    DBLoaded                                 удалён или выпал из этой сборки, во всех сборках
+  func      DB_Query                                 удалён или выпал из этой сборки, во всех сборках
+  define    DELETE_BAN                               удалён или выпал из этой сборки, во всех сборках
+  define    DELETE_BAN_ID                            удалён или выпал из этой сборки, во всех сборках
+  define    DELETE_BAN_ID_IP                         удалён или выпал из этой сборки, во всех сборках
+  define    DELETE_BAN_IP                            удалён или выпал из этой сборки, во всех сборках
+  func      DatabaseConnect                          удалён или выпал из этой сборки, во всех сборках
+  define    INSERT_ADD_BAN                           удалён или выпал из этой сборки, во всех сборках
+  define    INSERT_BAN                               удалён или выпал из этой сборки, во всех сборках
+  global    LastQueryEBanNotCompleted                удалён или выпал из этой сборки, во всех сборках
+  define    MAX_TEMP_RESTRICTS                       удалён или выпал из этой сборки, во всех сборках
+  define    MYSQL_CHARSET                            удалён или выпал из этой сборки, во всех сборках
+  type      Restrict                                 удалён или выпал из этой сборки, во всех сборках
+  func      RestrictAddBan                           удалён или выпал из этой сборки, во всех сборках
+  func      RestrictAddTempRestrict                  удалён или выпал из этой сборки, во всех сборках
+  func      RestrictCacheClientBan                   удалён или выпал из этой сборки, во всех сборках
+  func      RestrictClearCacheByBanKey               удалён или выпал из этой сборки, во всех сборках
+  func      RestrictClientBan                        удалён или выпал из этой сборки, во всех сборках
+  func      RestrictClientHasDatabaseRestrict        удалён или выпал из этой сборки, во всех сборках
+  func      RestrictClientHasRestrict                изменён текст, во всех сборках
+  func      RestrictClientInitTemp                   удалён или выпал из этой сборки, во всех сборках
+  func      RestrictClientTempBan                    удалён или выпал из этой сборки, во всех сборках
+  func      RestrictClientUnBan                      удалён или выпал из этой сборки, во всех сборках
+  func      RestrictDeleteBan                        удалён или выпал из этой сборки, во всех сборках
+  func      RestrictFindTempRestrict                 удалён или выпал из этой сборки, во всех сборках
+  func      RestrictFormatDeleteQuery                удалён или выпал из этой сборки, во всех сборках
+  func      RestrictFormatDuration                   удалён или выпал из этой сборки, во всех сборках
+  func      RestrictFormatLookupQuery                удалён или выпал из этой сборки, во всех сборках
+  func      RestrictGetExpireValue                   удалён или выпал из этой сборки, во всех сборках
+  func      RestrictHasTempRestrict                  удалён или выпал из этой сборки, во всех сборках
+  func      RestrictInit                             изменён текст, во всех сборках
+  func      RestrictIsDatabaseLoaded                 изменён текст, во всех сборках
+  func      RestrictIsValidDuration                  удалён или выпал из этой сборки, во всех сборках
+  func      RestrictIsValidIP                        удалён или выпал из этой сборки, во всех сборках
+  func      RestrictLoadClientSummBans               удалён или выпал из этой сборки, во всех сборках
+  func      RestrictOnClientAuth                     изменён текст, во всех сборках
+  func      RestrictOnClientDisconnect               изменён текст, во всех сборках
+  func      RestrictOnMapEnd                         изменён текст, во всех сборках
+  func      RestrictRemoveTempRestrict               удалён или выпал из этой сборки, во всех сборках
+  func      RestrictSendInfoToAdmins                 удалён или выпал из этой сборки, во всех сборках
+  global    Restricts                                удалён или выпал из этой сборки, во всех сборках
+  define    SELECT_BANS                              удалён или выпал из этой сборки, во всех сборках
+  define    SELECT_BAN_ID                            удалён или выпал из этой сборки, во всех сборках
+  define    SELECT_BAN_ID_IP                         удалён или выпал из этой сборки, во всех сборках
+  define    SELECT_BAN_IP                            удалён или выпал из этой сборки, во всех сборках
+  define    SELECT_SUMM_BANS                         удалён или выпал из этой сборки, во всех сборках
+  func      SQL_Callback_AddBan                      удалён или выпал из этой сборки, во всех сборках
+  func      SQL_Callback_AddBanLookup                удалён или выпал из этой сборки, во всех сборках
+  func      SQL_Callback_BanClient                   удалён или выпал из этой сборки, во всех сборках
+  func      SQL_Callback_CheckError                  удалён или выпал из этой сборки, во всех сборках
+  func      SQL_Callback_CreateTables                удалён или выпал из этой сборки, во всех сборках
+  func      SQL_Callback_DeleteBanClient             удалён или выпал из этой сборки, во всех сборках
+  func      SQL_Callback_DeleteBanLookup             удалён или выпал из этой сборки, во всех сборках
+  func      SQL_Callback_SelectBans                  удалён или выпал из этой сборки, во всех сборках
+  func      SQL_Callback_SelectSummBans              удалён или выпал из этой сборки, во всех сборках
+  func      SQL_Callback_UnBan                       удалён или выпал из этой сборки, во всех сборках
+  global    SQLite                                   удалён или выпал из этой сборки, во всех сборках
+  global    TempRestricts                            удалён или выпал из этой сборки, во всех сборках
+  global    TempRestricts_Count                      удалён или выпал из этой сборки, во всех сборках
+  func      UTIL_GetAccountIDFromSteamID             удалён или выпал из этой сборки, во всех сборках
+  func      UTIL_GetSteamIDFromAccountID             удалён или выпал из этой сборки, во всех сборках
+
+ИТОГ: 78 незапланированных расхождений.
+```
+
+Проверено: скрипт `symbols.py` и чтение. Не компилировалось.
