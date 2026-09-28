@@ -628,3 +628,31 @@ Stock-функция ItemFormat перенесена побайтно из items
 ```
 
 Проверено: скрипт `symbols.py` и чтение. Не компилировалось.
+
+## Шаг 5.1
+
+OnClientPutInServer, OnClientDisconnect, OnClientCookiesCached и OnClientSayCommand перенесены из client.sp в entWatch.sp.
+
+Не перенос: Новые ClientsOnClientPutInServer(int client) с GetClientAuthId, тремя SDKHook и ClientAuth, и ClientsOnClientDisconnect(int client) с Clients[client].Clear();. Форварды вызывают эти делегаты; в PutInServer HUD перемещён перед GetClientAuthId по target.md. Fake-client guard, порядок ADMIN_MENU→HUD→клиент и HUD→ASSIST_USE→очистка→рестрикты сохранены по плану.
+
+Наблюдения: Независимое чтение GPT-6 Sol этапов 3–5 подтвердило layout, гейты и порядок клиентского жизненного цикла. HudClientReadCookie не использует SteamID/Account. Других замечаний нет.
+
+Проверка: `python docs/restructure/tools/symbols.py --allow OnClientPutInServer --allow OnClientDisconnect --allow ClientsOnClientPutInServer --allow ClientsOnClientDisconnect`; код 0.
+
+```text
+База: HEAD; сравнивается: рабочее дерево; сравнено сборок: 128 (перебор BOTOX_SM, HUD, ASSIST_USE, ADMIN_MENU, HALFZOMBIE, RESTRICT_BUILTIN, _zr_included)
+
+Перенесены без изменений:
+  func   OnClientCookiesCached                    entWatch/client.sp -> entWatch.sp
+  func   OnClientSayCommand                       entWatch/client.sp -> entWatch.sp
+
+Расхождения:
+  func      ClientsOnClientDisconnect                добавлен или попал в эту сборку, во всех сборках  (разрешено)
+  func      ClientsOnClientPutInServer               добавлен или попал в эту сборку, во всех сборках  (разрешено)
+  func      OnClientDisconnect                       изменён текст, во всех сборках  (разрешено)
+  func      OnClientPutInServer                      изменён текст, во всех сборках  (разрешено)
+
+ИТОГ: только перенос; незапланированных расхождений нет.
+```
+
+Проверено: скрипт `symbols.py` и чтение. Не компилировалось.

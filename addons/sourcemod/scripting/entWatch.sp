@@ -119,6 +119,61 @@ public void OnMapEnd()
     RestrictOnMapEnd();
 }
 
+public void OnClientPutInServer(int client)
+{
+    if(IsFakeClient(client))
+        return;
+        
+    #if defined ADMIN_MENU
+    AdminOnClientPutInServer(client);
+    #endif
+
+    #if defined HUD
+    HudOnClientPutInServer(client);
+    #endif
+
+    ClientsOnClientPutInServer(client);
+}
+
+public void OnClientDisconnect(int client)
+{
+    #if defined HUD
+    HudOnClientDisconnect(client);
+    #endif
+    
+    #if defined ASSIST_USE
+    AssistUseOnClientDisconnect(client);
+    #endif
+
+    ClientsOnClientDisconnect(client);
+
+    RestrictOnClientDisconnect(client);
+}
+
+
+public void OnClientCookiesCached(int client)
+{
+    #if defined HUD
+    HudOnClientCookiesCached(client);
+    #endif
+}
+
+public Action OnClientSayCommand(int client, const char[] command, const char[] args)
+{
+    if(client == 0)
+        return Plugin_Continue;
+
+    if(IsFakeClient(client))
+        return Plugin_Continue;
+
+    #if defined ADMIN_MENU
+    if(AdminOnClientSayCommand(client, args))
+        return Plugin_Handled;
+    #endif
+
+    return Plugin_Continue;
+}
+
 #if defined HALFZOMBIE
 public void OnPlayerSpawn(Event event, const char[] name, bool dontBroadcast)
 {

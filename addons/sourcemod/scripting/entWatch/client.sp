@@ -14,20 +14,9 @@ enum struct Client
 
 Client Clients[MAXPLAYERS + 1];
 
-public void OnClientPutInServer(int client)
+void ClientsOnClientPutInServer(int client)
 {
-    if(IsFakeClient(client))
-        return;
-        
-    #if defined ADMIN_MENU
-    AdminOnClientPutInServer(client);
-    #endif
-
     GetClientAuthId(client, AuthId_Steam2, Clients[client].SteamID, sizeof(Clients[].SteamID), true);
-
-    #if defined HUD
-    HudOnClientPutInServer(client);
-    #endif
 
     SDKHook(client, SDKHook_WeaponEquipPost, OnWeaponPickup);
     SDKHook(client, SDKHook_WeaponDropPost, OnWeaponDrop);
@@ -43,28 +32,10 @@ void ClientAuth(int client)
     RestrictOnClientAuth(client);
 }
 
-public void OnClientCookiesCached(int client)
+void ClientsOnClientDisconnect(int client)
 {
-    #if defined HUD
-    HudOnClientCookiesCached(client);
-    #endif
-}
-
-public void OnClientDisconnect(int client)
-{
-    #if defined HUD
-    HudOnClientDisconnect(client);
-    #endif
-    
-    #if defined ASSIST_USE
-    AssistUseOnClientDisconnect(client);
-    #endif
-
     Clients[client].Clear();
-
-    RestrictOnClientDisconnect(client);
 }
-
 
 void ClientLostHandleAction(int client, int action)
 {
@@ -81,22 +52,6 @@ void ClientLostHandleAction(int client, int action)
             ItemReleaseOwner(item);
         }
     }
-}
-
-public Action OnClientSayCommand(int client, const char[] command, const char[] args)
-{
-    if(client == 0)
-        return Plugin_Continue;
-
-    if(IsFakeClient(client))
-        return Plugin_Continue;
-
-    #if defined ADMIN_MENU
-    if(AdminOnClientSayCommand(client, args))
-        return Plugin_Handled;
-    #endif
-
-    return Plugin_Continue;
 }
 
 stock int ClientGetByAccount(int account)
