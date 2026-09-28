@@ -1,5 +1,3 @@
-#define SELECT_BANS "SELECT * FROM `ebans` WHERE (`expires` = -1 OR `expires` > %i) AND (`pid` = %i OR `pip` = '%s') LIMIT 1;"
-
 enum struct Client
 {
     int Account;
@@ -16,20 +14,9 @@ enum struct Client
 
 Client Clients[MAXPLAYERS + 1];
 
-public void OnClientPutInServer(int client)
+void ClientsOnClientPutInServer(int client)
 {
-    if(IsFakeClient(client))
-        return;
-        
-    #if defined ADMIN_MENU
-    AdminOnClientPutInServer(client);
-    #endif
-
     GetClientAuthId(client, AuthId_Steam2, Clients[client].SteamID, sizeof(Clients[].SteamID), true);
-
-    #if defined HUD
-    HudOnClientPutInServer(client);
-    #endif
 
     SDKHook(client, SDKHook_WeaponEquipPost, OnWeaponPickup);
     SDKHook(client, SDKHook_WeaponDropPost, OnWeaponDrop);
@@ -42,83 +29,13 @@ void ClientAuth(int client)
 {
     Clients[client].Account = GetSteamAccountID(client);
 
-    // Аккаунт стал известен - только теперь можно узнать, висит ли на игроке
-    // временный рестрикт, выданный до его переподключения.
-    RestrictClientInitTemp(client);
-
-    // Гейт именно по DBLoaded, а не по "DB != null": на пути SQLite соединение
-    // готово сразу, а таблиц ещё нет - запрос из OnPluginStart уходил впустую,
-    // после чего SQL_Callback_CreateTables() авторизовал того же игрока второй
-    // раз, и entWatch_OnClientLoaded улетал дважды.
-    if(!DBLoaded)
-    {
-        // Базы нет - значит нет и рестриктов: тот же fail-open, что и в
-        // RestrictClientHasRestrict(), иначе игрок не сможет поднять предмет.
-        // Форвард отсюда не шлём - загрузка ещё не состоялась, её выполнит
-        // повторный вызов из SQL_Callback_CreateTables().
-        Clients[client].Authorized = true;
-        return;
-    }
-
-    char ip[16];
-
-    if(!Clients[client].Account || !GetClientIP(client, ip, sizeof(ip)))
-        return;
-
-    DB_Query(SQL_Callback_SelectBans, GetClientUserId(client), DBPrio_Normal, SELECT_BANS, GetTime(), Clients[client].Account, ip);
+    RestrictOnClientAuth(client);
 }
 
-public void SQL_Callback_SelectBans(Database db, DBResultSet results, const char[] error, int userid)
+void ClientsOnClientDisconnect(int client)
 {
-    int client = GetClientOfUserId(userid);
-
-    if(client == 0)
-        return;
-
-    // Проверяем именно results: строка ошибки может остаться пустой при неудаче (dbi.inc:334-337).
-    if(results == null)
-    {
-        // Ответа от БД нет - значит и рестрикта нет. Тот же fail-open,
-        // что и в RestrictClientHasRestrict(), иначе игрок навсегда останется
-        // без права поднимать предметы (OnWeaponTouch).
-        LogError("SQL_Callback_SelectBans() : %s", error);
-    }
-    else
-    {
-        if(results.FetchRow())
-        {
-            RestrictCacheClientBan(client, results);
-        }
-
-        RestrictLoadClientSummBans(client);
-    }
-
-    Clients[client].Authorized = true;
-    APIOnClientLoaded(client);
-}
-
-public void OnClientCookiesCached(int client)
-{
-    #if defined HUD
-    HudOnClientCookiesCached(client);
-    #endif
-}
-
-public void OnClientDisconnect(int client)
-{
-    #if defined HUD
-    HudOnClientDisconnect(client);
-    #endif
-    
-    #if defined ASSIST_USE
-    AssistUseOnClientDisconnect(client);
-    #endif
-
     Clients[client].Clear();
-
-    RestrictOnClientDisconnect(client);
 }
-
 
 void ClientLostHandleAction(int client, int action)
 {
@@ -135,22 +52,6 @@ void ClientLostHandleAction(int client, int action)
             ItemReleaseOwner(item);
         }
     }
-}
-
-public Action OnClientSayCommand(int client, const char[] command, const char[] args)
-{
-    if(client == 0)
-        return Plugin_Continue;
-
-    if(IsFakeClient(client))
-        return Plugin_Continue;
-
-    #if defined ADMIN_MENU
-    if(AdminOnClientSayCommand(client, args))
-        return Plugin_Handled;
-    #endif
-
-    return Plugin_Continue;
 }
 
 stock int ClientGetByAccount(int account)

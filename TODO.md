@@ -50,7 +50,6 @@ actually fired, so the plugin keeps predicting. Details and the reasoning are in
 - `{name}` colours are resolved only in GFL-format config blocks; UNLOZE blocks take `color`
   literally (`entWatch/config.sp`). Most likely an oversight rather than a decision.
 - The HUD marker `[D]` means two different things: "uses spent" and "the button entity is gone".
-- `CLAUDE.md` still states the version is `1.0.1`.
 
 ## Deliberately not done
 

@@ -9,14 +9,9 @@
 
 #define BOTOX_SM
 
-#define HUD
-#define ASSIST_USE
-#define ADMIN_MENU
-#define HALFZOMBIE
-
 bool Late;
 
-#include "entWatch/database.sp"
+#include "entWatch/modules.sp"
 #include "entWatch/colors.sp"
 #include "entWatch/config.sp"
 #include "entWatch/items.sp"
@@ -40,7 +35,7 @@ public Plugin myinfo =
     name = "entWatch",
     author = "hEl",
     description = "Provides useful features with map items",
-    version = "1.1.1",
+    version = "1.1.2",
     url = "https://github.com/CSS-SWZ/entWatch"
 };
 
@@ -59,23 +54,13 @@ public void OnPluginStart()
     LoadTranslations("common.phrases");
     LoadTranslations("entWatch.phrases");
 
-    #if defined HUD
-    HudInit();
-    #endif
-
     RestrictInit();
     TransferInit();
     SpawnInit();
     StripperInit();
 
-    DatabaseConnect();
     DumpInit();
     ColorsInit();
-
-    #if defined HALFZOMBIE
-    HookEvent("player_spawn", OnPlayerSpawn);
-    HookEvent("player_team", OnPlayerTeam);
-    #endif
 
     HookEvent("player_death", OnPlayerDeath);
     HookEvent("player_disconnect", OnPlayerDisconnect);
@@ -84,13 +69,7 @@ public void OnPluginStart()
 
     (FindConVar("mp_restartgame")).AddChangeHook(OnRestartGame);
 
-    #if defined ASSIST_USE
-    AssistUseInit();
-    #endif
-
-    #if defined ADMIN_MENU
-    AdminMenuInit();
-    #endif
+    ModulesInit();
 
     for(int i = 1; i <= MaxClients; i++)
     {
@@ -138,6 +117,61 @@ public void OnMapEnd()
 
     ConfigOnMapEnd();
     RestrictOnMapEnd();
+}
+
+public void OnClientPutInServer(int client)
+{
+    if(IsFakeClient(client))
+        return;
+        
+    #if defined ADMIN_MENU
+    AdminOnClientPutInServer(client);
+    #endif
+
+    #if defined HUD
+    HudOnClientPutInServer(client);
+    #endif
+
+    ClientsOnClientPutInServer(client);
+}
+
+public void OnClientDisconnect(int client)
+{
+    #if defined HUD
+    HudOnClientDisconnect(client);
+    #endif
+    
+    #if defined ASSIST_USE
+    AssistUseOnClientDisconnect(client);
+    #endif
+
+    ClientsOnClientDisconnect(client);
+
+    RestrictOnClientDisconnect(client);
+}
+
+
+public void OnClientCookiesCached(int client)
+{
+    #if defined HUD
+    HudOnClientCookiesCached(client);
+    #endif
+}
+
+public Action OnClientSayCommand(int client, const char[] command, const char[] args)
+{
+    if(client == 0)
+        return Plugin_Continue;
+
+    if(IsFakeClient(client))
+        return Plugin_Continue;
+
+    #if defined ADMIN_MENU
+    if(AdminOnClientSayCommand(client, args))
+        return Plugin_Handled;
+    #endif
+
+    return Plugin_Continue;
 }
 
 #if defined HALFZOMBIE

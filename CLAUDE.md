@@ -7,7 +7,7 @@ repository.
 
 **entWatch** — a SourceMod plugin for **CS:S zombie-escape servers** that takes control of the
 map's *special items* (a.k.a. "materia"). Repository `CSS-SWZ/entWatch`, version lives in
-`myinfo` in `entWatch.sp` (currently `1.0.1`).
+`myinfo` in `entWatch.sp` (currently `1.1.2`).
 
 A *special item* is a map-placed weapon (usually a pistol; a knife for zombies and for some
 human items) wired to map entities: an invisible `func_button`, a `trigger_*`, and optionally
@@ -72,9 +72,10 @@ spcomp -i"addons/sourcemod/scripting/include" addons/sourcemod/scripting/entWatc
 
 There are no tests. Verification = clean compile, then testing on the live server.
 
-Feature `#define`s in `entWatch.sp` — `HUD`, `ASSIST_USE`, `ADMIN_MENU`, `HALFZOMBIE` — are all
-enabled in production, but they exist so subsystems *can* be switched off. When touching a gated
-module, keep both builds (gate on and off) compiling warning-free.
+Feature `#define`s in `entWatch/modules.sp` — `HUD`, `ASSIST_USE`, `ADMIN_MENU`, `HALFZOMBIE`,
+`RESTRICT_BUILTIN` — are all enabled in production, but they exist so subsystems *can* be switched
+off. Without `RESTRICT_BUILTIN`, the restrict facade selects its no-restrict implementation.
+When touching a gated module, keep both builds (gate on and off) compiling warning-free.
 
 ## Git / workflow
 
@@ -104,12 +105,28 @@ comments are in Russian.
 
 Everything compiles into a single `.smx`. `entWatch.sp` is a **mediator**: it declares *all*
 SourceMod forwards and fans each one out to module functions (`ItemsOnRoundStart()`,
-`ConfigOnMapStart()`, `HudOnClientDisconnect()`, …). To hook a module onto a lifecycle event,
-add its call to the matching forward in `entWatch.sp`.
+`ConfigOnMapStart()`, `HudOnClientDisconnect()`, …). All four client forwards
+(`OnClientPutInServer`, `OnClientDisconnect`, `OnClientCookiesCached`, `OnClientSayCommand`) live
+there too; `client.sp` supplies `ClientsOnClientPutInServer()`, `ClientsOnClientDisconnect()` and
+`ClientAuth()`. To hook a module onto a lifecycle event, add its call to the matching forward in
+`entWatch.sp`. `modules.sp` holds the feature defines and `ModulesInit()`, called from
+`OnPluginStart()` for gated module initialization.
 
 It is one translation unit — globals and functions are visible across files, so **include order
-in `entWatch.sp` is dependency order**: `config.sp` (declares `Configs[]`, `MODE_*`, `SLOT_*`,
-`DISPLAY_*`) comes before `items.sp`, which comes before everything that touches `Items[]`.
+in `entWatch.sp` is dependency order**. After the SourceMod and public API includes, the module
+order is: `modules.sp`, `colors.sp`, `config.sp`, `items.sp`, `client.sp`, `chat.sp`,
+`assist_use.sp`, `halfzombie.sp`, `sdkhook.sp`, `dump.sp`, `hud.sp`, `restrict.sp`, `transfer.sp`,
+`helpers.sp`, `admin_menu.sp`, `spawn.sp`, `api.sp`, `stripper.sp`. `config.sp` declares
+`Configs[]`, `MODE_*`, `SLOT_*` and `DISPLAY_*` before including `config/parse.sp` and
+`config/save.sp`; `items.sp` declares `Items[]` before including `items/register.sp`,
+`items/search.sp` and `items/state.sp`.
+
+`restrict.sp` is the facade: it includes `restrict/builtin.sp` when `RESTRICT_BUILTIN` is defined,
+or `restrict/none.sp` otherwise. Both implementations provide six functions:
+`RestrictInit()` (commands and storage), `RestrictOnClientAuth()` (authorization and loaded
+notification), `RestrictOnClientDisconnect()` (slot cleanup), `RestrictOnMapEnd()` (map cleanup),
+`RestrictClientHasRestrict()` (fast gameplay check) and `RestrictIsDatabaseLoaded()` (public
+native state). Other modules use this contract instead of the built-in implementation's data.
 
 Late load is handled with the global `Late` flag (set in `AskPluginLoad2`, cleared at the end of
 `OnMapStart`); it lets `ItemsRegisterItemEntity()` adopt weapons that already have an owner.
@@ -146,8 +163,8 @@ entity outputs `OnEqualTo` on `logic_compare` and `OnTrigger` on `logic_relay`.
 
 ### Per-map configs
 
-`configs/entwatch/<map>.cfg`, map name lowercased (`ConfigOnMapStart`). Format is auto-detected
-per key block in `ConfigGetType()`:
+`configs/entwatch/<map>.cfg`, map name lowercased (`ConfigOnMapStart()` in `config.sp`).
+`config/parse.sp` auto-detects the format per key block in `ConfigGetType()`:
 
 | | GFL | UNLOZE |
 |---|---|---|
@@ -159,8 +176,9 @@ per key block in `ConfigGetType()`:
 | mode | `mode` (1-based) | `mode` (0-based) |
 
 Both formats are live on production maps. **Adding a config key means touching three places**:
-`ConfigBrowseKeyGFL()`, `ConfigBrowseKeyUNLOZE()` and `AdminConfigBrowseItems()` (the in-game
-config editor's save path, which writes the format the config was read as).
+`ConfigBrowseKeyGFL()` and `ConfigBrowseKeyUNLOZE()` in `config/parse.sp`, and
+`AdminConfigBrowseItems()` in `config/save.sp` (the in-game config editor's save path, which
+writes the format the config was read as).
 
 ## Domain rules that matter
 
@@ -202,24 +220,35 @@ These are the non-obvious contracts. Do not "clean them up" without understandin
 
 | File | Responsibility |
 |---|---|
-| `entWatch.sp` | mediator: forwards, feature `#define`s, module includes |
-| `entWatch/config.sp` | per-map config parsing (GFL + UNLOZE), `Configs[]`, `MODE_*`/`SLOT_*`/`DISPLAY_*` |
-| `entWatch/items.sp` | `Items[]`, entity binding, readiness/reload, HUD line formatting |
+| `entWatch.sp` | mediator: all SourceMod forwards and module includes; `BOTOX_SM` platform define |
+| `entWatch/modules.sp` | feature defines and gated initialization in `ModulesInit()` |
+| `entWatch/config.sp` | `Configs[]`, constants, map lifecycle, config lookup; includes `config/` |
+| `entWatch/config/parse.sp` | GFL and UNLOZE per-map config parsing |
+| `entWatch/config/save.sp` | admin config save and item browsing (`ADMIN_MENU`) |
+| `entWatch/items.sp` | `Items[]`, runtime lifecycle; includes `items/` |
+| `entWatch/items/register.sp` | entity binding by Hammer ID, button discovery, relationship checks |
+| `entWatch/items/search.sp` | item lookup by name, entity, reference and owner |
+| `entWatch/items/state.sp` | ownership, drop, readiness and reload |
 | `entWatch/sdkhook.sp` | all gameplay hooks: pickup/drop/touch, button press, compare/relay outputs |
-| `entWatch/client.sp` | `Clients[]`, per-client hooks, DB auth, item loss on death/disconnect |
-| `entWatch/restrict.sp` | ebans: commands, SQL, per-client restrict state |
-| `entWatch/database.sp` | connection (`databases.cfg` block `entwatch`, else SQLite), schema, `DB_Query()` |
-| `entWatch/hud.sp` | `KeyHintText` HUD, 1 s timer, per-team paged buffers, `sm_hud` cookie |
+| `entWatch/client.sp` | `Clients[]`, client delegates, per-client hooks and `ClientAuth()`; calls the restrict facade for auth |
+| `entWatch/restrict.sp` | six-function restrict contract; selects built-in or no-restrict implementation |
+| `entWatch/restrict/builtin.sp` | built-in restrict state and facade functions; includes `builtin/` |
+| `entWatch/restrict/builtin/database.sp` | connection (`databases.cfg` block `entwatch`, else SQLite), schema, `DB_Query()` |
+| `entWatch/restrict/builtin/{temp,load,ban,unban,offline}.sp` | temporary restricts, auth load, online/offline ban and unban flows |
+| `entWatch/restrict/builtin/{commands,menu,utils}.sp` | restrict commands, admin menu (`ADMIN_MENU`), validation and Steam ID helpers |
+| `entWatch/restrict/none.sp` | no-restrict contract implementation when `RESTRICT_BUILTIN` is off |
+| `entWatch/hud.sp` | `KeyHintText` HUD, 1 s timer, per-team paged buffers, `sm_hud` cookie, item line formatting |
 | `entWatch/chat.sp` | team-scoped announcements, `SayText2` wrapper, colour tags |
 | `entWatch/colors.sp` | `configs/entwatch/colors.cfg` + named-colour → hex map |
 | `entWatch/assist_use.sp` | forced button press on E (see below) |
 | `entWatch/transfer.sp` | admin item transfer, drop of transferred items on round end |
 | `entWatch/spawn.sp` | spawning items from a map `point_template` via `env_entity_maker` |
-| `entWatch/admin_menu.sp` | admin UI: ebans, transfer, forced use, live config editor |
+| `entWatch/admin_menu.sp` | admin menu root, reload and shared menu helper |
+| `entWatch/admin_menu/{transfer,use,config_editor}.sp` | transfer, forced use and live config editor menus |
 | `entWatch/stripper.sp` | server commands for stripper/map configs: `sm_setcooldown`, `sm_setmaxuses`, `sm_decuses` |
 | `entWatch/halfzombie.sp` | ZR integration: half-zombie classes may not hold items |
 | `entWatch/api.sp` | natives and global forwards |
-| `entWatch/helpers.sp`, `dump.sp` | shared utilities; `sm_edump` diagnostics |
+| `entWatch/helpers.sp`, `dump.sp` | shared lowercase utility; `sm_edump` diagnostics |
 
 **assist_use** deserves a note: pressing E does not reliably activate an item (the crosshair may
 hit a wall, the button may need a jump to line up), so the module fires the button for the player
@@ -240,8 +269,10 @@ Per-client visibility is a `clientprefs` cookie (`entwatch_display`, `sm_hud`).
 
 ## Database
 
-Table `ebans`, created on connect. MySQL if `databases.cfg` has an `entwatch` block, otherwise
-SQLite (`SQLite_UseDatabase("entwatch")`).
+The built-in implementation is in `entWatch/restrict/builtin/database.sp` and is included when
+`RESTRICT_BUILTIN` is enabled in `entWatch/modules.sp`. Without it, `entWatch/restrict/none.sp`
+provides the facade with no database. Table `ebans` is created on connect. MySQL if
+`databases.cfg` has an `entwatch` block, otherwise SQLite (`SQLite_UseDatabase("entwatch")`).
 
 - The table is currently owned by this plugin alone; a web panel is planned, so the schema may be
   **changed freely** — there is no legacy to preserve. A normalized, properly indexed schema is
