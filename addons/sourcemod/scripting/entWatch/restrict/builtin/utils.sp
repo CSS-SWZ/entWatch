@@ -47,6 +47,7 @@ void RestrictFormatDuration(char[] buffer, int size, int duration, bool translat
     	FormatEx(buffer, size, "%i minutes", duration);
     }
 }
+
 // R1KO
 stock int UTIL_GetAccountIDFromSteamID(const char[] steamid)
 {

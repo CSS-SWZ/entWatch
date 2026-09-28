@@ -140,3 +140,51 @@ ModulesInit(); перед циклом игроков. Основание: ша�
 ```
 
 Проверено: скрипт `symbols.py` и чтение. Не компилировалось.
+
+## Шаг 2.3
+
+Группы load, ban, unban, offline вместе с SQL define перенесены из builtin.sp в одноимённые файлы builtin/. В builtin.sp остались общие данные, include и четыре функции фасада/проверки.
+
+Не перенос: Нет.
+
+Наблюдения: По ревью добавлена пустая строка между группами из restrict.sp и helpers.sp в utils.sp, без правки символов. В 2.2 SQL define сдвинулись ниже вследствие разрешённого подъёма трёх globals и вставки include; их взаимный порядок был сохранён. Повторная проверка 2.3 после разделителя прошла.
+
+Проверка: `python docs/restructure/tools/symbols.py `; код 0.
+
+```text
+База: HEAD; сравнивается: рабочее дерево; сравнено сборок: 128 (перебор BOTOX_SM, HUD, ASSIST_USE, ADMIN_MENU, HALFZOMBIE, RESTRICT_BUILTIN, _zr_included)
+
+Перенесены без изменений:
+  define INSERT_BAN                               entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/ban.sp
+  func   RestrictClientBan                        entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/ban.sp
+  func   RestrictClientTempBan                    entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/ban.sp
+  func   SQL_Callback_BanClient                   entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/ban.sp
+  define SELECT_SUMM_BANS                         entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/load.sp
+  func   RestrictCacheClientBan                   entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/load.sp
+  func   RestrictLoadClientSummBans               entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/load.sp
+  func   RestrictSendInfoToAdmins                 entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/load.sp
+  func   SQL_Callback_SelectSummBans              entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/load.sp
+  define DELETE_BAN_ID                            entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/offline.sp
+  define DELETE_BAN_ID_IP                         entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/offline.sp
+  define DELETE_BAN_IP                            entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/offline.sp
+  define INSERT_ADD_BAN                           entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/offline.sp
+  define SELECT_BAN_ID                            entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/offline.sp
+  define SELECT_BAN_ID_IP                         entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/offline.sp
+  define SELECT_BAN_IP                            entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/offline.sp
+  func   RestrictAddBan                           entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/offline.sp
+  func   RestrictDeleteBan                        entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/offline.sp
+  func   RestrictFormatDeleteQuery                entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/offline.sp
+  func   RestrictFormatLookupQuery                entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/offline.sp
+  func   SQL_Callback_AddBan                      entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/offline.sp
+  func   SQL_Callback_AddBanLookup                entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/offline.sp
+  func   SQL_Callback_DeleteBanClient             entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/offline.sp
+  func   SQL_Callback_DeleteBanLookup             entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/offline.sp
+  define DELETE_BAN                               entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/unban.sp
+  func   RestrictClearCacheByBanKey               entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/unban.sp
+  func   RestrictClientUnBan                      entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/unban.sp
+  func   SQL_Callback_UnBan                       entWatch/restrict/builtin.sp -> entWatch/restrict/builtin/unban.sp
+
+ИТОГ: только перенос; незапланированных расхождений нет.
+```
+
+Проверено: скрипт `symbols.py` и чтение. Не компилировалось.
