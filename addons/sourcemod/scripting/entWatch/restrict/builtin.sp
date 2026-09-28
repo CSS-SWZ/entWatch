@@ -36,6 +36,7 @@ bool LastQueryEBanNotCompleted;
 #include "builtin/unban.sp"
 #include "builtin/offline.sp"
 #include "builtin/commands.sp"
+#include "builtin/menu.sp"
 
 void RestrictInit()
 {

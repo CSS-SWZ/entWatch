@@ -249,3 +249,31 @@ database.sp целиком перенесён в restrict/builtin/database.sp; �
 ```
 
 Проверено: скрипт `symbols.py` и чтение. Не компилировалось.
+
+## Шаг 2.6
+
+Восемь функций BanMenu … BannedPlayerMenu_Handler перенесены из admin_menu.sp в builtin/menu.sp с прежним ADMIN_MENU-гейтом. include menu.sp добавлен последним в builtin.sp; текст функций и набор сборок сохранены.
+
+Не перенос: Нет.
+
+Наблюдения: Незапланированных изменений не обнаружено.
+
+Проверка: `python docs/restructure/tools/symbols.py `; код 0.
+
+```text
+База: HEAD; сравнивается: рабочее дерево; сравнено сборок: 128 (перебор BOTOX_SM, HUD, ASSIST_USE, ADMIN_MENU, HALFZOMBIE, RESTRICT_BUILTIN, _zr_included)
+
+Перенесены без изменений:
+  func   BanLengthMenu                            entWatch/admin_menu.sp -> entWatch/restrict/builtin/menu.sp
+  func   BanLengthMenu_Handler                    entWatch/admin_menu.sp -> entWatch/restrict/builtin/menu.sp
+  func   BanMenu                                  entWatch/admin_menu.sp -> entWatch/restrict/builtin/menu.sp
+  func   BanMenu_Handler                          entWatch/admin_menu.sp -> entWatch/restrict/builtin/menu.sp
+  func   BannedPlayerMenu                         entWatch/admin_menu.sp -> entWatch/restrict/builtin/menu.sp
+  func   BannedPlayerMenu_Handler                 entWatch/admin_menu.sp -> entWatch/restrict/builtin/menu.sp
+  func   BannedPlayersMenu                        entWatch/admin_menu.sp -> entWatch/restrict/builtin/menu.sp
+  func   BannedPlayersMenu_Handler                entWatch/admin_menu.sp -> entWatch/restrict/builtin/menu.sp
+
+ИТОГ: только перенос; незапланированных расхождений нет.
+```
+
+Проверено: скрипт `symbols.py` и чтение. Не компилировалось.
