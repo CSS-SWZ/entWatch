@@ -14,6 +14,10 @@ Item Items[MAX_ITEMS];
 
 bool RoundStarted;
 
+#include "items/register.sp"
+#include "items/search.sp"
+#include "items/state.sp"
+
 void ItemsOnMapStart()
 {
     // Поздней загрузке сканирование нужно: round_start для неё уже прошёл.
@@ -74,238 +78,7 @@ void ItemsClear()
     Items_Count = 0;
 }
 
-void ItemsOnEntitySpawned(int entity)
-{
-    if(!RoundStarted)
-        return;
-
-    int hammerid = GetEntProp(entity, Prop_Data, "m_iHammerID");
-
-    if(hammerid == 0)
-        return;
-
-    int config = -1;
-    int type = -1;
-    
-    if(!ItemsRegisterGetKeyValues(hammerid, type, config))
-        return;
-
-    for(int i = 0; i < Items_Count; i++)
-    {
-        if(Items[i].Config != config)
-            continue;
-
-        if(ItemsRegisterItemEntity(i, Items[i], entity, type))
-            return;
-    }
-
-    ItemsInitiateItem(entity, config, type);
-}
-
-bool ItemsRegisterGetKeyValues(int hammerid, int& type, int& config)
-{
-    for(int i = 0; i < Configs_Count; i++)
-    {
-        if(Configs[i].Weapon_HammerId == hammerid)
-        {
-            type = REGISTER_WEAPON;
-            config = i;
-            return true;
-        }
-        if(Configs[i].Trigger_HammerId == hammerid)
-        {
-            type = REGISTER_TRIGGER;
-            config = i;
-            return true;
-        }
-        if(Configs[i].Button_HammerId == hammerid)
-        {
-            type = REGISTER_BUTTON;
-            config = i;
-            return true;
-        }
-        if(Configs[i].Compare_HammerId == hammerid)
-        {
-            type = REGISTER_COMPARE;
-            config = i;
-            return true;
-        }
-        if(Configs[i].Relay_HammerId == hammerid)
-        {
-            type = REGISTER_RELAY;
-            config = i;
-            return true;
-        }
-    }
-
-    return false;
-}
-
-bool ItemsRegisterItemEntity(int id, Item item, int entity, int type)
-{
-    int owner = GetEntPropEnt(entity, Prop_Data, "m_hOwnerEntity");
-    int parent = GetEntPropEnt(entity, Prop_Data, "m_pParent");
-
-    switch(type)
-    {
-        case REGISTER_WEAPON:
-        {
-            if(item.Weapon)
-                return false;
-
-            if(owner != INVALID_ENT_REFERENCE)
-            {
-                if(!Late)
-                    return false;
-
-                item.Owner = owner;
-            }
-
-            item.Weapon = entity;
-            ItemProcessCheckButton(id);
-            return true;
-        }
-        case REGISTER_BUTTON:
-        {
-            if(item.Button)
-                return false;
-
-            if(item.Weapon && parent != INVALID_ENT_REFERENCE)
-            {
-                if(parent != item.Weapon && !AreEntitiesRelated(parent, item.Weapon))
-                    return false;
-            }
-
-            SDKHook(entity, SDKHook_Use, OnButtonPress);
-            item.Button = entity;
-            return true;
-        }
-        case REGISTER_TRIGGER:
-        {
-            if(item.Trigger)
-                return false;
-
-            if(item.Weapon && parent != INVALID_ENT_REFERENCE)
-            {
-                if(parent != item.Weapon && !AreEntitiesRelated(parent, item.Weapon))
-                    return false;
-            }
-
-            SDKHook(entity, SDKHook_StartTouch, OnTriggerTouch);
-            SDKHook(entity, SDKHook_EndTouch, OnTriggerTouch);
-            SDKHook(entity, SDKHook_Touch, OnTriggerTouch);
-            item.Trigger = entity;
-            return true;
-        }
-        case REGISTER_COMPARE:
-        {
-            if(item.Compare)
-                return false;
-
-            HookSingleEntityOutput(entity, "OnEqualTo", Compare_OnEqualTo);
-
-            item.Compare = entity;
-            return true;
-        }
-        case REGISTER_RELAY:
-        {
-            if(item.Relay)
-                return false;
-
-            HookSingleEntityOutput(entity, "OnTrigger", Relay_OnTrigger);
-
-            item.Relay = entity;
-            return true;
-        }
-    }
-
-    return false;
-}
-
-void ItemsInitiateItem(int entity, int config, int type)
-{
-    if(Items_Count >= MAX_ITEMS)
-        return;
-    
-    int item = Items_Count;
-    ItemInit(item, config);
-    ItemsRegisterItemEntity(item, Items[item], entity, type);
-    Items_Count++;
-}
-
-void ItemProcessCheckButton(int item)
-{
-    if(Items[item].Button)
-        return;
-
-    // В таймер уходит ссылка на оружие, а не индекс. За эти 0.5 с ItemRemove()
-    // сдвигает Items[], и сохранённый индекс начинает значить другой предмет:
-    // кнопка регистрировалась в чужой слот, а живой предмет оставался с
-    // Button == 0, то есть ItemsGetByButton() не находил его и OnButtonPress()
-    // пропускал нажатие вообще без проверки владельца.
-    CreateTimer(0.5, Timer_ItemFindButton, ItemGetRef(item), TIMER_FLAG_NO_MAPCHANGE);
-}
-
-public Action Timer_ItemFindButton(Handle timer, int ref)
-{
-    int item = ItemsGetByRef(ref);
-
-    if(item == -1)
-        return Plugin_Continue;
-
-    if(!Items[item].Weapon || Items[item].Button || Items[item].Config == -1 || Configs[Items[item].Config].Mode == -1)
-        return Plugin_Continue;
-
-    int parent;
-    int physbox;
-    int door;
-    int button;
-    char classname[32];
-
-    for(int i = MaxClients + 1; i < 2048; i++)
-    {
-        if(!IsValidEntity(i))
-            continue;
-
-        parent = GetEntPropEnt(i, Prop_Data, "m_pParent");
-
-        if(parent != Items[item].Weapon)
-            continue;
-
-        if(Configs[Items[item].Config].Button_HammerId && Configs[Items[item].Config].Button_HammerId != GetEntProp(i, Prop_Data, "m_iHammerID"))
-            continue;
-        
-        if(!GetEntityClassname(i, classname, sizeof(classname)))
-            continue;
-
-        if(StrContains(classname, "button", false) != -1){
-            button = i; break;
-        }
-        else if(!strcmp(classname, "func_physbox_multiplayer", false))
-            physbox = i;
-
-        else if(StrContains(classname, "door", false) != -1)
-            door = i;
-    }
-
-    int entity = ItemsGetButtonByPriority(button, physbox, door);
-
-    if(entity)
-        ItemsRegisterItemEntity(item, Items[item], entity, REGISTER_BUTTON);
-
-    return Plugin_Continue;
-}
-
 // Возвращает кнопку по приоритету. Сначало func_button. Кнопка будет определена как айтем-кнопка.
-
-int ItemsGetButtonByPriority(int button, int physbox, int door)
-{
-    if(button)  return button;
-    if(physbox) return physbox;
-    if(door)    return door;
-
-    return 0;
-}
 
 void ItemsOnEntityDestroyed(int entity)
 {
@@ -343,238 +116,6 @@ void ItemsOnEntityDestroyed(int entity)
             Items[i].RemovedButton = true;
             Items[i].Relay = 0;
             return;
-        }
-    }
-}
-
-stock int ItemsGetByName(const char[] name)
-{
-    int len = strlen(name);
-    for(int i = 0; i < Items_Count; i++)
-    {
-        if(strncmp(Configs[Items[i].Config].Name, name, len, false) == 0)
-            return i;
-    }
-
-    return -1;
-}
-
-stock int ItemsGetByShortName(const char[] name)
-{
-    int len = strlen(name);
-
-    // Пустая строка не должна совпадать ни с чем: strncmp() с нулевой длиной
-    // возвращает 0 и вернул бы первый попавшийся предмет.
-    if(len == 0)
-        return -1;
-
-    for(int i = 0; i < Items_Count; i++)
-    {
-        if(strncmp(Configs[Items[i].Config].ShortName, name, len, false) == 0)
-            return i;
-    }
-
-    return -1;
-}
-
-int ItemsGetByWeaponHammerID(int hammerid)
-{
-    for(int i = 0; i < Items_Count; i++)
-    {
-        if(Items[i].Config != -1 && Configs[Items[i].Config].Weapon_HammerId == hammerid)
-            return i;
-    }
-
-    return -1;
-}
-
-int ItemsGetByWeapon(int weapon)
-{
-    for(int i = 0; i < Items_Count; i++)
-    {
-        if(Items[i].Weapon == weapon)
-            return i;
-    }
-
-    return -1;
-}
-
-// Устойчивый ключ предмета для меню и прочего кода, живущего между кадрами:
-// индексы в Items[] сдвигаются при ItemRemove(), а ссылка на оружие - нет.
-int ItemGetRef(int item)
-{
-    return EntIndexToEntRef(Items[item].Weapon);
-}
-
-// Обратное преобразование. -1, если предмета больше нет: сущность оружия
-// удалена (ссылка протухла) либо предмет снят с учёта.
-int ItemsGetByRef(int ref)
-{
-    int weapon = EntRefToEntIndex(ref);
-
-    if(weapon == INVALID_ENT_REFERENCE)
-        return -1;
-
-    return ItemsGetByWeapon(weapon);
-}
-
-int ItemsGetByButton(int button)
-{
-    for(int i = 0; i < Items_Count; i++)
-    {
-        if(Items[i].Button == button)
-            return i;
-    }
-
-    return -1;
-}
-
-int ItemsGetByCompare(int logic_compare)
-{
-    for(int i = 0; i < Items_Count; i++)
-    {
-        if(Items[i].Compare == logic_compare)
-            return i;
-    }
-
-    return -1;
-}
-
-int ItemsGetByRelay(int logic_relay)
-{
-    for(int i = 0; i < Items_Count; i++)
-    {
-        if(Items[i].Relay == logic_relay)
-            return i;
-    }
-
-    return -1;
-}
-
-stock int ItemFindClientItem(int client, int startitem = -1)
-{
-    for(int i = ++startitem; i < Items_Count; i++)
-    {
-        if(Items[i].Owner == client)
-            return i;
-    }
-
-    return -1;
-}
-
-// Снимает владельца с предмета. Отделено от ItemDrop() намеренно: "оружие нельзя
-// бросить на землю" (ножи, I5) и "владелец больше не владеет" - разные вещи.
-// У предмета не может быть мёртвого или вышедшего владельца.
-void ItemReleaseOwner(int item)
-{
-    int owner = Items[item].Owner;
-
-    if(owner == 0)
-        return;
-
-    Items[item].Owner = 0;
-    Items[item].Transfered = false;
-
-    // bypassHooks у SDKHooks_DropWeapon() по умолчанию true (sdkhooks.inc:452),
-    // поэтому OnWeaponDrop() на программном пути не срабатывает и форвард
-    // сторонним плагинам надо отправить самим.
-    APIOnClientItemDrop(owner, item);
-}
-
-bool ItemDrop(int item)
-{
-    if(Configs[Items[item].Config].Slot == SLOT_NONE || Configs[Items[item].Config].Slot == SLOT_KNIFE)
-        return false;
-
-    SDKHooks_DropWeapon(Items[item].Owner, Items[item].Weapon, NULL_VECTOR, NULL_VECTOR);
-    ItemReleaseOwner(item);
-
-    return true;
-}
-
-bool ItemIsReady(int item)
-{
-    float time = GetGameTime();
-
-    if(Items[item].Wait >= time)
-        return false;
-
-    if (HasEntProp(Items[item].Button, Prop_Data, "m_bLocked") && GetEntProp(Items[item].Button, Prop_Data, "m_bLocked"))
-        return false;
-
-    switch(Configs[Items[item].Config].Mode)
-    {
-        case MODE_PROTECT:
-        {
-            return true;
-        }
-        case MODE_COOLDOWN:
-        {
-        	if (Items[item].Cooldown < time)
-                return true;
-        }
-        case MODE_MAXUSES:
-        {
-        	if (Items[item].Uses < Configs[Items[item].Config].Maxuses)
-                return true;
-        }
-        case MODE_MAXUSESCD:
-        {
-        	if (Items[item].Cooldown < time && Items[item].Uses < Configs[Items[item].Config].Maxuses)
-                return true;
-        }
-        case MODE_CHARGESCD:
-        {
-        	if (Items[item].Cooldown < time)
-                return true;
-        }
-        default:
-        {
-            return true;
-        }
-    }
-    return false;
-}
-
-void ItemReload(int item)
-{
-    float time = GetGameTime();
-
-    // Fix ghost using
-    time += GetTickInterval() * 5.0;
-
-    if (HasEntProp(Items[item].Button, Prop_Data, "m_flWait"))
-	{
-        float wait = GetEntPropFloat(Items[item].Button, Prop_Data, "m_flWait");
-
-        if(wait > 0.0)
-            Items[item].Wait = time + wait;
-	}
-    
-    switch(Configs[Items[item].Config].Mode)
-    {
-        case MODE_COOLDOWN:
-        {
-            Items[item].Cooldown = time + Configs[Items[item].Config].Cooldown;
-        }
-        case MODE_MAXUSES:
-        {
-            Items[item].Uses++;
-        }
-        case MODE_MAXUSESCD:
-        {
-            Items[item].Cooldown = time + Configs[Items[item].Config].Cooldown;
-            Items[item].Uses++;
-        }
-        case MODE_CHARGESCD:
-        {
-            Items[item].Uses++;
-            
-            if (Items[item].Uses >= Configs[Items[item].Config].Maxuses)
-            {
-                Items[item].Cooldown = time + Configs[Items[item].Config].Cooldown;
-                Items[item].Uses = 0;
-            }
         }
     }
 }
@@ -704,3 +245,33 @@ void ItemUnhook(int item)
         UnhookSingleEntityOutput(Items[item].Relay, "OnTrigger", Relay_OnTrigger);
     }
 }
+
+stock void RemoveItemByConfig(int config)
+{
+	int i = 0;
+
+	while(i < Items_Count)
+	{
+		if(Items[i].Config == config)
+		{
+			// Слот нужно освободить целиком: снять хуки с ещё живых кнопки,
+			// триггера, compare и relay, иначе они продолжат срабатывать на
+			// предмет, которого больше нет.
+			ItemUnhook(i);
+			ItemClear(i);
+			ItemRemove(i);
+
+			// ItemRemove() сдвинул массив вниз - на этом же индексе теперь
+			// стоит следующий предмет, поэтому i не увеличиваем.
+			continue;
+		}
+
+		if(Items[i].Config > config)
+		{
+			Items[i].Config--;
+		}
+
+		i++;
+	}
+}
+

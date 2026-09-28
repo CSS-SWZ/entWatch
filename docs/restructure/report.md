@@ -561,3 +561,46 @@ AdminConfigSave и AdminConfigBrowseItems перенесены из admin_menu.s
 ```
 
 Проверено: скрипт `symbols.py` и чтение. Не компилировалось.
+
+## Шаг 4.2
+
+Из items.sp перенесены привязка сущностей в items/register.sp, поиск в items/search.sp, владение и готовность в items/state.sp. AreEntitiesRelated перенесена из helpers.sp в register.sp, RemoveItemByConfig — в items.sp. Include стоят после всех общих данных, включая REGISTER_* и RoundStarted. Текст символов сохранён.
+
+Не перенос: Нет.
+
+Наблюдения: Незапланированных изменений не обнаружено.
+
+Проверка: `python docs/restructure/tools/symbols.py `; код 0.
+
+```text
+База: HEAD; сравнивается: рабочее дерево; сравнено сборок: 128 (перебор BOTOX_SM, HUD, ASSIST_USE, ADMIN_MENU, HALFZOMBIE, RESTRICT_BUILTIN, _zr_included)
+
+Перенесены без изменений:
+  func   RemoveItemByConfig                       entWatch/helpers.sp -> entWatch/items.sp
+  func   AreEntitiesRelated                       entWatch/helpers.sp -> entWatch/items/register.sp
+  func   ItemProcessCheckButton                   entWatch/items.sp -> entWatch/items/register.sp
+  func   ItemsGetButtonByPriority                 entWatch/items.sp -> entWatch/items/register.sp
+  func   ItemsInitiateItem                        entWatch/items.sp -> entWatch/items/register.sp
+  func   ItemsOnEntitySpawned                     entWatch/items.sp -> entWatch/items/register.sp
+  func   ItemsRegisterGetKeyValues                entWatch/items.sp -> entWatch/items/register.sp
+  func   ItemsRegisterItemEntity                  entWatch/items.sp -> entWatch/items/register.sp
+  func   Timer_ItemFindButton                     entWatch/items.sp -> entWatch/items/register.sp
+  func   ItemFindClientItem                       entWatch/items.sp -> entWatch/items/search.sp
+  func   ItemGetRef                               entWatch/items.sp -> entWatch/items/search.sp
+  func   ItemsGetByButton                         entWatch/items.sp -> entWatch/items/search.sp
+  func   ItemsGetByCompare                        entWatch/items.sp -> entWatch/items/search.sp
+  func   ItemsGetByName                           entWatch/items.sp -> entWatch/items/search.sp
+  func   ItemsGetByRef                            entWatch/items.sp -> entWatch/items/search.sp
+  func   ItemsGetByRelay                          entWatch/items.sp -> entWatch/items/search.sp
+  func   ItemsGetByShortName                      entWatch/items.sp -> entWatch/items/search.sp
+  func   ItemsGetByWeapon                         entWatch/items.sp -> entWatch/items/search.sp
+  func   ItemsGetByWeaponHammerID                 entWatch/items.sp -> entWatch/items/search.sp
+  func   ItemDrop                                 entWatch/items.sp -> entWatch/items/state.sp
+  func   ItemIsReady                              entWatch/items.sp -> entWatch/items/state.sp
+  func   ItemReleaseOwner                         entWatch/items.sp -> entWatch/items/state.sp
+  func   ItemReload                               entWatch/items.sp -> entWatch/items/state.sp
+
+ИТОГ: только перенос; незапланированных расхождений нет.
+```
+
+Проверено: скрипт `symbols.py` и чтение. Не компилировалось.
