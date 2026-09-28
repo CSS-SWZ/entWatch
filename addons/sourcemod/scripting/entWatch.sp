@@ -9,13 +9,9 @@
 
 #define BOTOX_SM
 
-#define HUD
-#define ASSIST_USE
-#define ADMIN_MENU
-#define HALFZOMBIE
-
 bool Late;
 
+#include "entWatch/modules.sp"
 #include "entWatch/database.sp"
 #include "entWatch/colors.sp"
 #include "entWatch/config.sp"
@@ -59,10 +55,6 @@ public void OnPluginStart()
     LoadTranslations("common.phrases");
     LoadTranslations("entWatch.phrases");
 
-    #if defined HUD
-    HudInit();
-    #endif
-
     RestrictInit();
     TransferInit();
     SpawnInit();
@@ -72,11 +64,6 @@ public void OnPluginStart()
     DumpInit();
     ColorsInit();
 
-    #if defined HALFZOMBIE
-    HookEvent("player_spawn", OnPlayerSpawn);
-    HookEvent("player_team", OnPlayerTeam);
-    #endif
-
     HookEvent("player_death", OnPlayerDeath);
     HookEvent("player_disconnect", OnPlayerDisconnect);
     HookEvent("round_start", OnRoundStart, EventHookMode_PostNoCopy);
@@ -84,13 +71,7 @@ public void OnPluginStart()
 
     (FindConVar("mp_restartgame")).AddChangeHook(OnRestartGame);
 
-    #if defined ASSIST_USE
-    AssistUseInit();
-    #endif
-
-    #if defined ADMIN_MENU
-    AdminMenuInit();
-    #endif
+    ModulesInit();
 
     for(int i = 1; i <= MaxClients; i++)
     {
